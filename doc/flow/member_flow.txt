@@ -1,0 +1,11 @@
+member regiter flow
+frontend requst restful > submit job to pool > pop job to execute > call db oem > update datacache > notify frontend response
+
+member edit flow
+frontend requst restful > submit job to pool > pop job to execute > call db oem > update datacache > notify frontend response
+
+member delete flow
+frontend requst restful > submit job to pool > pop job to execute > call db oem > update datacache > notify frontend response
+
+member list flow
+frontend requst restful > submit job to pool > pop job to execute > call db oem > update datacache > notify frontend response

@@ -2,7 +2,7 @@ package web
 
 import (
 	"github.com/gin-gonic/gin"
-	"space.online.shop.web.server/server/rest"
+	"space.online.shop.web.server/rest"
 )
 
 var webServer *WebServer
@@ -11,11 +11,11 @@ type WebServer struct {
 	Engine *gin.Engine
 }
 
-func init() {
+func New() *WebServer {
 	webServer = &WebServer{
 		Engine: gin.Default(),
 	}
-	Register()
+	return webServer
 }
 
 func Server() *WebServer {
@@ -27,7 +27,8 @@ func Register() {
 }
 
 func (s *WebServer) Initialize() {
+	Register()
 	go func() {
-		s.Engine.Run(":3000")
+		webServer.Engine.Run(":3000")
 	}()
 }

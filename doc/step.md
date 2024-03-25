@@ -15,3 +15,17 @@ https://space-online-shop.web.app/welcome
     1. register
     1. login
     1. logout
+
+## [Docker install & uninstall mysql]
+
+Create networks, volumes. Start container
+
+```sql
+docker-compose.exe -f mysql.yml up -d
+```
+
+Remove container, networks, volumes
+
+```sql
+docker-compose.exe -f mysql.yml down --volumes
+```
