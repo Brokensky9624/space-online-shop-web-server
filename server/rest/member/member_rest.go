@@ -10,8 +10,25 @@ import (
 )
 
 func Register(r *gin.Engine) {
-	group := r.Group("/cmd/member")
-	group.POST("/create", func(c *gin.Context) {
+	r.POST("/register", func(c *gin.Context) {
+		var user MemberParam
+		if err := c.ShouldBindJSON(&user); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		// cmd register
+		if err := member.Register(tool.StructToMap(user)); err != nil {
+			c.JSON(http.StatusOK, response.FailRespObj(err))
+			return
+		}
+		// Set the response
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Register member " + user.Username + "!",
+		})
+	})
+	r.POST("/login", func(c *gin.Context) {
 		var user MemberParam
 		if err := c.ShouldBindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -20,7 +37,7 @@ func Register(r *gin.Engine) {
 			return
 		}
 		// cmd create
-		if err := member.Create(tool.StructToMap(user)); err != nil {
+		if err := member.Register(tool.StructToMap(user)); err != nil {
 			c.JSON(http.StatusOK, response.FailRespObj(err))
 			return
 		}
@@ -29,6 +46,8 @@ func Register(r *gin.Engine) {
 			"message": "Create member " + user.Username + "!",
 		})
 	})
+
+	group := r.Group("/api")
 	group.PUT("/edit", func(c *gin.Context) {
 		var user MemberEditParam
 		// Get the "name" parameter from the route
@@ -48,17 +67,17 @@ func Register(r *gin.Engine) {
 			"message": "Edit member " + user.Username + "!",
 		})
 	})
-	group.DELETE("/delete/:memberID", func(c *gin.Context) {
+	group.DELETE("/delete/:username", func(c *gin.Context) {
 		// Get the "name" parameter from the route
-		memberID := c.Param("memberID")
+		username := c.Param("username")
 		// cmd delete
-		if err := member.Delete(); err != nil {
+		if err := member.Delete(username); err != nil {
 			c.JSON(http.StatusOK, response.FailRespObj(err))
 			return
 		}
 		// Set the response
 		c.JSON(http.StatusOK, gin.H{
-			"message": "Delete member " + memberID + "!",
+			"message": "Delete member " + username + "!",
 		})
 	})
 	group.GET("/list", func(c *gin.Context) {

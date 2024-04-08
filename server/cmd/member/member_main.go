@@ -11,20 +11,30 @@ import (
 
 type param = map[string]interface{}
 
-func Create(memberParam param) error {
+func Register(memberParam param) error {
 	var errPreFix string = "failed to member create"
 	db := mysqlSrv.DB()
+	// check db is nil
 	if db == nil {
 		return tool.PrefixError(errPreFix, errors.New("mysql db is nil"))
 	}
+	// check username is empty
 	username, ok := memberParam["username"].(string)
 	if !ok || username == "" {
-		return tool.PrefixError(errPreFix, errors.New("need Username"))
+		return tool.PrefixError(errPreFix, errors.New("need username"))
 	}
+	// check password is empty
 	password, ok := memberParam["password"].(string)
 	if !ok || password == "" {
-		return tool.PrefixError(errPreFix, errors.New("need Password"))
+		return tool.PrefixError(errPreFix, errors.New("need password"))
 	}
+	// check user is existed
+	var existedMember model.Member
+	result := db.Where(&model.Member{Username: username}).First(&existedMember)
+	if result.Error == nil {
+		return tool.PrefixError(errPreFix, errors.New("user is existed"))
+	}
+	// has password
 	pwd, err := tool.HashPassword(password)
 	if err != nil {
 		return tool.PrefixError(errPreFix, err)
@@ -35,9 +45,14 @@ func Create(memberParam param) error {
 		Password: pwd,
 		Email:    email,
 	}
-	result := db.Create(model)
+	// create member
+	result = db.Create(model)
 	if result.Error != nil {
 		return tool.PrefixError(errPreFix, result.Error)
+	}
+	// check affect
+	if result.RowsAffected == 0 {
+		return tool.PrefixError(errPreFix, errors.New("no member created"))
 	}
 	fmt.Printf("member %s create successfully!", username)
 	return nil
@@ -45,14 +60,17 @@ func Create(memberParam param) error {
 
 func Edit(memberParam param) error {
 	var errPreFix string = "failed to member edit"
+	// check db is nil
 	db := mysqlSrv.DB()
 	if db == nil {
 		return tool.PrefixError(errPreFix, errors.New("mysql db is nil"))
 	}
+	// check username is empty
 	username, ok := memberParam["username"].(string)
 	if !ok || username == "" {
 		return tool.PrefixError(errPreFix, errors.New("need username"))
 	}
+	// check email is empty
 	email, ok := memberParam["email"].(string)
 	if !ok || email == "" {
 		return tool.PrefixError(errPreFix, errors.New("need email"))
@@ -60,45 +78,52 @@ func Edit(memberParam param) error {
 	memberNewInfo := &model.Member{
 		Email: email,
 	}
+	// update member
 	result := db.Model(&model.Member{}).Where("username = ?", username).Updates(memberNewInfo)
 	if result.Error != nil {
 		return tool.PrefixError(errPreFix, result.Error)
 	}
+	// check affect
 	if result.RowsAffected == 0 {
-		return tool.PrefixError(errPreFix, errors.New("no member update"))
+		return tool.PrefixError(errPreFix, errors.New("no member updated"))
 	}
 	fmt.Printf("member %s edit successfully!", username)
 	return nil
 }
 
-func Delete() error {
-	var err error
+func Delete(username string) error {
 	var errPreFix string = "failed to member delete"
-	defer func() {
-		if err != nil {
-			err = tool.PrefixError(errPreFix, err)
-		}
-	}()
 	db := mysqlSrv.DB()
+	// check db is nil
 	if db == nil {
-		return errors.New("mysql db is nil")
+		return tool.PrefixError(errPreFix, errors.New("mysql db is nil"))
 	}
-	return err
+	// check username is empty
+	if username == "" {
+		return tool.PrefixError(errPreFix, errors.New("need username"))
+	}
+	// delete member
+	result := db.Where("username = ?", username).Delete(&model.Member{})
+	if result.Error != nil {
+		return tool.PrefixError(errPreFix, result.Error)
+	}
+	// check affect
+	if result.RowsAffected == 0 {
+		return tool.PrefixError(errPreFix, errors.New("no member deleted"))
+	}
+	fmt.Printf("member %s delete successfully!", username)
+	return nil
 }
 
 func List() ([]model.Member, error) {
-	var err error
 	var errPreFix string = "failed to member list"
-	defer func() {
-		if err != nil {
-			err = tool.PrefixError(errPreFix, err)
-		}
-	}()
 	db := mysqlSrv.DB()
+	// check db is nil
 	if db == nil {
-		return nil, errors.New("mysql db is nil")
+		return nil, tool.PrefixError(errPreFix, errors.New("mysql db is nil"))
 	}
+	// find all member
 	var members []model.Member
 	db.Find(&members)
-	return members, err
+	return members, nil
 }
