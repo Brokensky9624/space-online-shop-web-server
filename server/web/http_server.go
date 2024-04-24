@@ -50,7 +50,7 @@ func (s *WebServer) RegisterRoute() *WebServer {
 	s.Engine.POST("/refresh-token", s.JWTMid.RefreshHandler)
 	apiGroup := s.Engine.Group("/api")
 	apiGroup.Use(s.JWTMid.MiddlewareFunc())
-	rootGroup := s.Engine.Group("/")
-	member.NewREST(s.SrvManager, rootGroup).RegisterRoute()
+	memberREST := member.NewREST(s.SrvManager, apiGroup).RegisterRoute()
+	s.Engine.POST("/register", memberREST.Register)
 	return s
 }

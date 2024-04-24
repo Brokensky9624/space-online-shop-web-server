@@ -1,11 +1,11 @@
 package types
 
 type IMemberSrv interface {
-	Auth() (bool, error)
-	AuthAndMember() (*Member, error)
+	Auth(param *MemberAuthParam) (bool, error)
+	AuthAndMember(param *MemberAuthParam) (*Member, error)
 	Create(param *MemberCreateParam) error
 	Edit(param *MemberEditParam) error
 	Delete(param *MemberDeleteParam) error
-	Member() (*Member, error)
+	Member(param *MemberInfoParam) (*Member, error)
 	Members() ([]Member, error)
 }

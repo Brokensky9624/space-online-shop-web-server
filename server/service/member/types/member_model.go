@@ -6,7 +6,7 @@ import (
 )
 
 type Member struct { // User structure
-	ID       string     `json:"id"`
+	ID       uint       `json:"id"`
 	Username string     `json:"username"`
 	Password string     `json:"password"`
 	Role     MemberRole `json:"role"`
@@ -18,6 +18,16 @@ const (
 	Admin MemberRole = iota
 	Normal
 )
+
+type MemberAuthParam struct {
+	ID       uint   `json:"id"  required:"true"`
+	Username string `json:"username"  required:"true"`
+	Password string `json:"password" required:"true"`
+}
+
+func (param MemberAuthParam) Check() error {
+	return checkRequiredFields(param)
+}
 
 type MemberCreateParam struct {
 	Username string `json:"username" required:"true"`

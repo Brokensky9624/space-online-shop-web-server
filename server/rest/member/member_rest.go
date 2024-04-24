@@ -11,25 +11,23 @@ import (
 
 func NewREST(srvManager *service.ServiceManager, routerGroup *gin.RouterGroup) *MemberREST {
 	return &MemberREST{
-		SrvManager:  srvManager,
-		RouterGroup: routerGroup,
+		SrvManager: srvManager,
+		apiGroup:   routerGroup,
 	}
 }
 
 type MemberREST struct {
-	*gin.RouterGroup
+	apiGroup   *gin.RouterGroup
 	SrvManager *service.ServiceManager
 }
 
 func (r *MemberREST) RegisterRoute() *MemberREST {
-	apiGroup := r.RouterGroup.Group("/api")
-	apiGroup.Group("/member")
+	memberGroup := r.apiGroup.Group("/member")
 	{
-		apiGroup.POST("/register", r.Register)
-		apiGroup.PUT("/edit", r.Edit)
-		apiGroup.DELETE("/delete/:id", r.Delete)
-		apiGroup.GET("/list", r.Members)
-		apiGroup.GET("/:id", r.Member)
+		memberGroup.PUT("/edit", r.Edit)
+		memberGroup.DELETE("/delete/:id", r.Delete)
+		memberGroup.GET("/list", r.Members)
+		memberGroup.GET("/:username", r.Member)
 	}
 	return r
 }
@@ -92,6 +90,20 @@ func (r *MemberREST) Delete(c *gin.Context) {
 }
 
 func (r *MemberREST) Members(c *gin.Context) {
+	memberSrv := r.SrvManager.MemberService()
+	// cmd delete
+	memberList, err := memberSrv.Members()
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailRespObj(err))
+		return
+	}
+	memberListLen := len(memberList)
+	dataList := make([]interface{}, memberListLen)
+	for i, member := range memberList {
+		dataList[i] = member
+	}
+	// Set the response
+	c.JSON(http.StatusOK, response.SuccessRespObj(dataList...))
 }
 
 func (r *MemberREST) Member(c *gin.Context) {

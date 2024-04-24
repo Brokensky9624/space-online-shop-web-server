@@ -31,31 +31,56 @@ func (s *MemberService) CheckDB() error {
 	return nil
 }
 
-func (s *MemberService) Auth() (bool, error) {
+func (s *MemberService) Auth(param *memberTypes.MemberAuthParam) (bool, error) {
 	return true, nil
 }
 
-func (s *MemberService) AuthAndMember() (*memberTypes.Member, error) {
-	return nil, nil
-}
-
-func (s *MemberService) Create(param *memberTypes.MemberCreateParam) error {
-	var errPreFix string = "failed to member create"
+func (s *MemberService) AuthAndMember(param *memberTypes.MemberAuthParam) (*memberTypes.Member, error) {
+	var errPreFix string = "Failed to auth member and get"
 
 	// check step
 	err := s.CheckDB()
 	if err != nil {
-		return err
+		return nil, tool.PrefixError(errPreFix, err)
 	}
 	if err = param.Check(); err != nil {
-		return err
+		return nil, tool.PrefixError(errPreFix, err)
+	}
+
+	db := s.DB
+	username := param.Username
+	var queryMember mysqlModel.Member
+	if err := db.Where(mysqlModel.Member{
+		Username: username,
+	}).Take(&queryMember).Error; err != nil {
+		return nil, tool.PrefixError(errPreFix, err)
+	}
+	if !tool.CheckPassword(param.Password, queryMember.Password) {
+		return nil, tool.PrefixError(errPreFix, errors.New("password is incorrect"))
+	}
+	return &memberTypes.Member{
+		ID:       queryMember.ID,
+		Username: queryMember.Username,
+		Role:     memberTypes.MemberRole(queryMember.Role),
+	}, nil
+}
+
+func (s *MemberService) Create(param *memberTypes.MemberCreateParam) error {
+	var errPreFix string = "Failed to create member"
+
+	// check step
+	err := s.CheckDB()
+	if err != nil {
+		return tool.PrefixError(errPreFix, err)
+	}
+	if err = param.Check(); err != nil {
+		return tool.PrefixError(errPreFix, err)
 	}
 
 	// check user is existed
 	db := s.DB
-	username := param.Username
 	var existedMember mysqlModel.Member
-	result := db.Where(&mysqlModel.Member{Username: username}).First(&existedMember)
+	result := db.Where(&mysqlModel.Member{Username: param.Username}).First(&existedMember)
 	if result.Error == nil {
 		return tool.PrefixError(errPreFix, errors.New("user is existed"))
 	}
@@ -65,11 +90,11 @@ func (s *MemberService) Create(param *memberTypes.MemberCreateParam) error {
 	if err != nil {
 		return tool.PrefixError(errPreFix, err)
 	}
-	email := param.Email
 	model := &mysqlModel.Member{
-		Username: username,
+		Username: param.Username,
 		Password: pwd,
-		Email:    email,
+		Email:    param.Email,
+		Role:     int(memberTypes.Normal),
 	}
 
 	// create member
@@ -83,21 +108,21 @@ func (s *MemberService) Create(param *memberTypes.MemberCreateParam) error {
 		return tool.PrefixError(errPreFix, errors.New("no member created"))
 	}
 
-	fmt.Printf("member %s create successfully!", username)
+	fmt.Printf("member %s create successfully!", param.Username)
 	return nil
 
 }
 
 func (s *MemberService) Edit(param *memberTypes.MemberEditParam) error {
-	var errPreFix string = "failed to member edit"
+	var errPreFix string = "Failed to member edit"
 
 	// check step
 	err := s.CheckDB()
 	if err != nil {
-		return err
+		return tool.PrefixError(errPreFix, err)
 	}
 	if err = param.Check(); err != nil {
-		return err
+		return tool.PrefixError(errPreFix, err)
 	}
 
 	// update member
@@ -120,15 +145,15 @@ func (s *MemberService) Edit(param *memberTypes.MemberEditParam) error {
 }
 
 func (s *MemberService) Delete(param *memberTypes.MemberDeleteParam) error {
-	var errPreFix string = "failed to member delete"
+	var errPreFix string = "Failed to member delete"
 
 	// check step
 	err := s.CheckDB()
 	if err != nil {
-		return err
+		return tool.PrefixError(errPreFix, err)
 	}
 	if err = param.Check(); err != nil {
-		return err
+		return tool.PrefixError(errPreFix, err)
 	}
 
 	// delete member
@@ -146,12 +171,36 @@ func (s *MemberService) Delete(param *memberTypes.MemberDeleteParam) error {
 	return nil
 }
 
-func (s *MemberService) Member() (*memberTypes.Member, error) {
-	return nil, nil
+func (s *MemberService) Member(param *memberTypes.MemberInfoParam) (*memberTypes.Member, error) {
+	var errPreFix string = "Failed to get member"
+
+	// check step
+	err := s.CheckDB()
+	if err != nil {
+		return nil, tool.PrefixError(errPreFix, err)
+	}
+	if err = param.Check(); err != nil {
+		return nil, tool.PrefixError(errPreFix, err)
+	}
+
+	// find member
+	db := s.DB
+	queryMember := &mysqlModel.Member{
+		Username: param.Username,
+	}
+	if err := db.Take(&queryMember).Error; err != nil {
+		return nil, tool.PrefixError(errPreFix, err)
+	}
+
+	return &memberTypes.Member{
+		ID:       queryMember.ID,
+		Username: queryMember.Username,
+		Role:     memberTypes.MemberRole(queryMember.Role),
+	}, nil
 }
 
 func (s *MemberService) Members() ([]memberTypes.Member, error) {
-	var errPreFix string = "failed to member list"
+	var errPreFix string = "Failed to get member list"
 	var memberList []memberTypes.Member = make([]memberTypes.Member, 0)
 
 	// check step
@@ -162,8 +211,16 @@ func (s *MemberService) Members() ([]memberTypes.Member, error) {
 
 	// find member list
 	db := s.DB
-	db.Find(&memberList)
+	var memberModelList []mysqlModel.Member
+	db.Find(&memberModelList)
 
-	// 	return members, nil
+	for _, memberModel := range memberModelList {
+		memberList = append(memberList, memberTypes.Member{
+			ID:       memberModel.ID,
+			Username: memberModel.Username,
+			Role:     memberTypes.MemberRole(memberModel.Role),
+		})
+	}
+
 	return memberList, nil
 }

@@ -11,13 +11,13 @@ const (
 	fail    = "fail"
 )
 
-func SuccessRespObj(data []interface{}) *RespObj {
+func SuccessRespObj(dataList ...interface{}) *RespObj {
 	respObj := &RespObj{
 		Status: success,
 		ErrMsg: "",
 		Data:   make([]interface{}, 0),
 	}
-	respObj.Data = append(respObj.Data, data...)
+	respObj.Data = append(respObj.Data, dataList...)
 	return respObj
 }
 
