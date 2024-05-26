@@ -99,7 +99,10 @@ type MysqlService struct {
 }
 
 func (d *MysqlService) InitTable() error {
-	return d.AutoMigrate(&model.Member{})
+	return d.AutoMigrate(
+		&model.Member{},
+		&model.Product{},
+	)
 }
 
 func (d *MysqlService) Ping() error {

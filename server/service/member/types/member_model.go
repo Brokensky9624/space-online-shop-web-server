@@ -1,15 +1,19 @@
 package types
 
 import (
-	"fmt"
-	"reflect"
+	"space.online.shop.web.server/service/db/mysql/model"
+	"space.online.shop.web.server/util/tool"
 )
 
-type Member struct { // User structure
+type Member struct {
 	ID       uint       `json:"id"`
+	Account  string     `json:"account"`
 	Username string     `json:"username"`
 	Password string     `json:"password"`
 	Role     MemberRole `json:"role"`
+	Email    string     `json:"email"`
+	Phone    string     `json:"phone"`
+	Address  string     `json:"address"`
 }
 
 type MemberRole int
@@ -20,66 +24,68 @@ const (
 )
 
 type MemberAuthParam struct {
-	ID       uint   `json:"id"  required:"true"`
-	Username string `json:"username"  required:"true"`
+	ID       uint   `json:"id"`
+	Account  string `json:"account" required:"true"`
 	Password string `json:"password" required:"true"`
 }
 
 func (param MemberAuthParam) Check() error {
-	return checkRequiredFields(param)
+	return tool.CheckRequiredFields(param)
 }
 
 type MemberCreateParam struct {
+	Account  string `json:"account" required:"true"`
 	Username string `json:"username" required:"true"`
 	Password string `json:"password" required:"true"`
-	Email    string `json:"email"`
+	Email    string `json:"email" required:"true"`
+	Phone    string `json:"phone"`
+	Address  string `json:"address"`
 }
 
 func (param MemberCreateParam) Check() error {
-	return checkRequiredFields(param)
+	return tool.CheckRequiredFields(param)
 }
 
 type MemberEditParam struct {
+	Account  string `json:"account" required:"true"`
 	Username string `json:"username" required:"true"`
 	Email    string `json:"email" required:"true"`
+	Phone    string `json:"phone" required:"true"`
+	Address  string `json:"address" required:"true"`
 }
 
 func (param MemberEditParam) Check() error {
-	return checkRequiredFields(param)
+	return tool.CheckRequiredFields(param)
 }
 
 type MemberDeleteParam struct {
-	Username string `json:"username" required:"true"`
-	Password string `json:"password" required:"true"`
+	Account string `json:"account" required:"true"`
 }
 
 func (param MemberDeleteParam) Check() error {
-	return checkRequiredFields(param)
+	return tool.CheckRequiredFields(param)
 }
 
 type MemberInfoParam struct {
-	Username string `json:"username" required:"true"`
-	Email    string `json:"email"`
-	Birth    string `json:"birth"`
-	Phone    string `json:"phone"`
+	Account string `json:"account" required:"true"`
 }
 
 func (param MemberInfoParam) Check() error {
-	return checkRequiredFields(param)
+	return tool.CheckRequiredFields(param)
 }
 
-func checkRequiredFields(param interface{}) error {
-	t := reflect.TypeOf(param)
-	v := reflect.ValueOf(param)
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		value := v.Field(i).String()
-		jsonTag := field.Tag.Get("json")
-		requiredTag := field.Tag.Get("required")
-		if requiredTag == "true" && value == "" {
-			return fmt.Errorf("%s is required but empty", jsonTag)
-		}
+func ModelToMember(m model.Member, includePassword bool) *Member {
+	member := &Member{
+		ID:       m.ID,
+		Account:  m.Account,
+		Username: m.Username,
+		Email:    m.Email,
+		Role:     MemberRole(m.Role),
+		Phone:    m.Phone,
+		Address:  m.Address,
 	}
-	return nil
+	if includePassword {
+		member.Password = m.Password
+	}
+	return member
 }

@@ -9,6 +9,7 @@ import (
 	"space.online.shop.web.server/service"
 	"space.online.shop.web.server/service/db/mysql"
 	"space.online.shop.web.server/service/member"
+	"space.online.shop.web.server/service/product"
 	"space.online.shop.web.server/web"
 )
 
@@ -20,8 +21,11 @@ func main() {
 	defer dbSrv.Close()
 
 	// setup services to service manager
-	memberSrv := member.NewService().SetDBService(dbSrv)
-	srvManager := service.NewManager().SetMemberService(memberSrv)
+	memberSrv := member.NewService(dbSrv)
+	productSrv := product.NewService(dbSrv)
+	srvManager := service.NewManager().
+		SetMemberService(memberSrv).
+		SetProductService(productSrv)
 
 	// setup web server and router
 	web.New().SetSrvManager(srvManager).Initialize()

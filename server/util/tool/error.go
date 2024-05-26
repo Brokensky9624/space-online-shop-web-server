@@ -19,5 +19,5 @@ func PrefixError(a string, b error) error {
 	if a == "" {
 		a = "error"
 	}
-	return fmt.Errorf("%s: %s", a, b)
+	return fmt.Errorf("%s, err: %s", a, b)
 }

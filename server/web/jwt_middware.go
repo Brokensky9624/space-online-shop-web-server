@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -29,7 +30,7 @@ func NewJWTMid() (*jwt.GinJWTMiddleware, error) {
 		MaxRefresh:       time.Hour * 24 * 7, // expiration time of refresh JWT token by old JWT token, after this time, need relogin
 		IdentityKey:      identityKey,        // this key used to store User identify information in JWT token claims
 		PayloadFunc: func(data interface{}) jwt.MapClaims { // this function used to generate JWT token claims by User data
-			if v, ok := data.(memberTypes.Member); ok {
+			if v, ok := data.(*memberTypes.Member); ok {
 				return jwt.MapClaims{
 					identityKey:      v.ID,
 					identityUsername: v.Username,
@@ -40,13 +41,12 @@ func NewJWTMid() (*jwt.GinJWTMiddleware, error) {
 		},
 		IdentityHandler: func(c *gin.Context) interface{} { // this function used to extract JWT token claims from restful request and generate User data
 			claims := jwt.ExtractClaims(c)
-			role := 0
-			if v, ok := claims[identityRole].(float64); ok {
-				role = int(v)
-			}
-			return memberTypes.Member{
-				ID:       claims[identityKey].(uint),
-				Username: claims[identityUsername].(string),
+			id, _ := claims[identityKey].(float64)
+			role, _ := claims[identityRole].(float64)
+			username := claims[identityUsername].(string)
+			return &memberTypes.Member{
+				ID:       uint(id),
+				Username: username,
 				Role:     memberTypes.MemberRole(role),
 			}
 		},
@@ -71,7 +71,7 @@ func NewJWTMid() (*jwt.GinJWTMiddleware, error) {
 			return false
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
-			c.JSON(code, response.SuccessRespObj(message))
+			c.JSON(code, response.FailRespObj(errors.New(message)))
 		},
 		TokenLookup:   "header: Authorization, query: token, cookie: jwt",
 		TokenHeadName: "Bearer",

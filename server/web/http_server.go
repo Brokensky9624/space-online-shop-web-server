@@ -6,6 +6,7 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"space.online.shop.web.server/rest/member"
+	"space.online.shop.web.server/rest/product"
 	"space.online.shop.web.server/service"
 )
 
@@ -52,5 +53,6 @@ func (s *WebServer) RegisterRoute() *WebServer {
 	apiGroup.Use(s.JWTMid.MiddlewareFunc())
 	memberREST := member.NewREST(s.SrvManager, apiGroup).RegisterRoute()
 	s.Engine.POST("/register", memberREST.Register)
+	_ = product.NewREST(s.SrvManager, apiGroup).RegisterRoute()
 	return s
 }

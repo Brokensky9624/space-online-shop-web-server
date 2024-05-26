@@ -1,6 +1,7 @@
 package member
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,9 +26,9 @@ func (r *MemberREST) RegisterRoute() *MemberREST {
 	memberGroup := r.apiGroup.Group("/member")
 	{
 		memberGroup.PUT("/edit", r.Edit)
-		memberGroup.DELETE("/delete/:id", r.Delete)
+		memberGroup.DELETE("/delete/:account", r.Delete)
 		memberGroup.GET("/list", r.Members)
-		memberGroup.GET("/:username", r.Member)
+		memberGroup.GET("/:account", r.Member)
 	}
 	return r
 }
@@ -41,57 +42,50 @@ func (r *MemberREST) Register(c *gin.Context) {
 		})
 		return
 	}
-	// cmd register
-	if err := memberSrv.Create(&user); err != nil {
+	// register member
+	if err := memberSrv.Create(user); err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	// Set the response
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Register member " + user.Username + "!",
-	})
+	message := fmt.Sprintf("Register member %s successful !", user.Account)
+	c.JSON(http.StatusOK, response.SuccessRespObj(message, nil))
 }
 
 func (r *MemberREST) Edit(c *gin.Context) {
 	memberSrv := r.SrvManager.MemberService()
 	var user MemberTypes.MemberEditParam
-	// Get the "name" parameter from the route
 	if err := c.ShouldBind(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
-	// cmd edit
-	if err := memberSrv.Edit(&user); err != nil {
+	// edit member
+	if err := memberSrv.Edit(user); err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	// Set the response
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Edit member " + user.Username + "!",
-	})
+	message := fmt.Sprintf("Edit member %s successful !", user.Account)
+	c.JSON(http.StatusOK, response.SuccessRespObj(message, nil))
 }
 
 func (r *MemberREST) Delete(c *gin.Context) {
 	memberSrv := r.SrvManager.MemberService()
-	username := c.Param("id")
-	// cmd delete
-	if err := memberSrv.Delete(&MemberTypes.MemberDeleteParam{
-		Username: username,
+	account := c.Param("account")
+	// delete member
+	if err := memberSrv.Delete(MemberTypes.MemberDeleteParam{
+		Account: account,
 	}); err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	// Set the response
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Delete member " + username + "!",
-	})
+	message := fmt.Sprintf("Delete member %s successful !", account)
+	c.JSON(http.StatusOK, response.SuccessRespObj(message, nil))
 }
 
 func (r *MemberREST) Members(c *gin.Context) {
 	memberSrv := r.SrvManager.MemberService()
-	// cmd delete
+	// get member list
 	memberList, err := memberSrv.Members()
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
@@ -102,95 +96,19 @@ func (r *MemberREST) Members(c *gin.Context) {
 	for i, member := range memberList {
 		dataList[i] = member
 	}
-	// Set the response
-	c.JSON(http.StatusOK, response.SuccessRespObj(dataList...))
+	c.JSON(http.StatusOK, response.SuccessRespObj("", dataList...))
 }
 
 func (r *MemberREST) Member(c *gin.Context) {
+	memberSrv := r.SrvManager.MemberService()
+	account := c.Param("account")
+	// query member
+	member, err := memberSrv.Member(MemberTypes.MemberInfoParam{
+		Account: account,
+	})
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailRespObj(err))
+		return
+	}
+	c.JSON(http.StatusOK, response.SuccessRespObj("", member))
 }
-
-// func Register(r *gin.Engine) {
-// 	r.POST("/register", func(c *gin.Context) {
-// 		var user MemberParam
-// 		if err := c.ShouldBindJSON(&user); err != nil {
-// 			c.JSON(http.StatusBadRequest, gin.H{
-// 				"error": err.Error(),
-// 			})
-// 			return
-// 		}
-// 		// cmd register
-// 		if err := member.Register(tool.StructToMap(user)); err != nil {
-// 			c.JSON(http.StatusOK, response.FailRespObj(err))
-// 			return
-// 		}
-// 		// Set the response
-// 		c.JSON(http.StatusOK, gin.H{
-// 			"message": "Register member " + user.Username + "!",
-// 		})
-// 	})
-// 	r.POST("/login", func(c *gin.Context) {
-// 		var user MemberParam
-// 		if err := c.ShouldBindJSON(&user); err != nil {
-// 			c.JSON(http.StatusBadRequest, gin.H{
-// 				"error": err.Error(),
-// 			})
-// 			return
-// 		}
-// 		// cmd create
-// 		if err := member.Register(tool.StructToMap(user)); err != nil {
-// 			c.JSON(http.StatusOK, response.FailRespObj(err))
-// 			return
-// 		}
-// 		// Set the response
-// 		c.JSON(http.StatusOK, gin.H{
-// 			"message": "Create member " + user.Username + "!",
-// 		})
-// 	})
-
-// 	group := r.Group("/api")
-// 	group.PUT("/edit", func(c *gin.Context) {
-// 		var user MemberEditParam
-// 		// Get the "name" parameter from the route
-// 		if err := c.ShouldBind(&user); err != nil {
-// 			c.JSON(http.StatusBadRequest, gin.H{
-// 				"error": err.Error(),
-// 			})
-// 			return
-// 		}
-// 		// cmd edit
-// 		if err := member.Edit(tool.StructToMap(user)); err != nil {
-// 			c.JSON(http.StatusOK, response.FailRespObj(err))
-// 			return
-// 		}
-// 		// Set the response
-// 		c.JSON(http.StatusOK, gin.H{
-// 			"message": "Edit member " + user.Username + "!",
-// 		})j
-// 	})j
-// 	group.DELETE("/delete/:username", func(c *gin.Context) {
-// 		// Get the "name" parameter from the route
-// 		username := c.Param("username")
-// 		// cmd delete
-// 		if err := member.Delete(username); err != nil {
-// 			c.JSON(http.StatusOK, response.FailRespObj(err))
-// 			return
-// 		}
-// 		// Set the response
-// 		c.JSON(http.StatusOK, gin.H{
-// 			"message": "Delete member " + username + "!",
-// 		})
-// 	})
-// 	group.GET("/list", func(c *gin.Context) {
-// 		// cmd list
-// 		members, err := member.List()
-// 		if err != nil {
-// 			c.JSON(http.StatusOK, response.FailRespObj(err))
-// 			return
-// 		}
-// 		ret := make([]interface{}, 0)
-// 		for _, m := range members {
-// 			ret = append(ret, m)
-// 		}
-// 		c.JSON(http.StatusOK, response.SuccessRespObj(ret))
-// 	})
-// }
