@@ -1,7 +1,7 @@
 package types
 
 import (
-	"space.online.shop.web.server/service/db/mysql/model"
+	"space.online.shop.web.server/service/db/model"
 	"space.online.shop.web.server/util/tool"
 )
 

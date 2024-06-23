@@ -1,0 +1,43 @@
+"2024/06/02-18:44:36.413" [DEBUG]   [GO-1][server/main.go:35]	- all ready
+"2024/06/02-18:44:36.413" [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/02-18:47:52.448 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/02-18:47:52.448 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/02-18:49:17.237 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/02-18:49:17.238 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/02-18:49:41.428 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/02-18:49:41.429 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/02-18:50:16.198 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/02-18:50:16.199 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/02-21:59:47.279 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/02-21:59:47.279 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/02-22:34:22.232 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/02-22:34:22.232 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/03-20:10:33.052 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/03-20:10:33.055 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/03-20:12:34.009 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/03-20:12:34.010 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/03-20:15:01.551 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/03-20:15:01.552 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/03-20:18:12.823 [DEBUG]	[GO-1][server/main.go:35]	- all ready
+2024/06/03-20:18:12.900 [DEBUG]	[GO-1][server/main.go:37]	- Jason did good job.
+2024/06/03-20:19:20.712 [DEBUG]	[GO-23][member/member_service.go:222]	- Test debug
+2024/06/03-20:19:20.712 [INFO]	[GO-23][member/member_service.go:223]	- Test info
+2024/06/03-20:19:33.893 [DEBUG]	[GO-23][member/member_service.go:222]	- Test debug
+2024/06/03-20:19:33.893 [INFO]	[GO-23][member/member_service.go:223]	- Test info
+2024/06/03-20:20:14.077 [DEBUG]	[GO-23][member/member_service.go:222]	- Test debug
+2024/06/03-20:20:14.078 [INFO]	[GO-23][member/member_service.go:223]	- Test info
+2024/06/03-20:20:16.708 [DEBUG]	[GO-23][member/member_service.go:222]	- Test debug
+2024/06/03-20:20:16.708 [INFO]	[GO-23][member/member_service.go:223]	- Test info
+2024/06/03-20:20:22.337 [DEBUG]	[GO-23][member/member_service.go:222]	- Test debug
+2024/06/03-20:20:22.338 [INFO]	[GO-23][member/member_service.go:223]	- Test info
+2024/06/03-20:20:25.762 [DEBUG]	[GO-23][member/member_service.go:222]	- Test debug
+2024/06/03-20:20:25.762 [INFO]	[GO-23][member/member_service.go:223]	- Test info
+2024/06/03-20:20:26.547 [DEBUG]	[GO-23][member/member_service.go:222]	- Test debug
+2024/06/03-20:20:26.547 [INFO]	[GO-23][member/member_service.go:223]	- Test info
+2024/06/03-20:22:46.720 [INFO]	[GO-55][member/member_service.go:223]	- Test info
+2024/06/03-20:22:48.825 [INFO]	[GO-55][member/member_service.go:223]	- Test info
+2024/06/03-20:22:55.083 [INFO]	[GO-55][member/member_service.go:223]	- Test info
+2024/06/03-20:22:56.060 [DEBUG]	[GO-55][member/member_service.go:222]	- Test debug
+2024/06/03-20:22:56.060 [INFO]	[GO-55][member/member_service.go:223]	- Test info
+2024/06/03-20:22:56.679 [DEBUG]	[GO-55][member/member_service.go:222]	- Test debug
+2024/06/03-20:22:56.679 [INFO]	[GO-55][member/member_service.go:223]	- Test info

@@ -1,7 +1,7 @@
 package service
 
 import (
-	"space.online.shop.web.server/service/db/mysql"
+	"space.online.shop.web.server/service/db"
 	memberTypes "space.online.shop.web.server/service/member/types"
 	productTypes "space.online.shop.web.server/service/product/types"
 )
@@ -21,13 +21,13 @@ func Manager() *ServiceManager {
 }
 
 type ServiceManager struct {
-	MysqlSrv   *mysql.MysqlService
+	DbService  *db.DbService
 	MemberSrv  IMemberSrv
 	ProductSrv IProductSrv
 }
 
-func (m *ServiceManager) SetDBService(srv *mysql.MysqlService) *ServiceManager {
-	m.MysqlSrv = srv
+func (m *ServiceManager) SetDBService(srv *db.DbService) *ServiceManager {
+	m.DbService = srv
 	return m
 }
 
@@ -41,8 +41,8 @@ func (m *ServiceManager) SetProductService(srv IProductSrv) *ServiceManager {
 	return m
 }
 
-func (m *ServiceManager) DBService() *mysql.MysqlService {
-	return m.MysqlSrv
+func (m *ServiceManager) DBService() *db.DbService {
+	return m.DbService
 }
 
 func (m *ServiceManager) MemberService() IMemberSrv {

@@ -38,7 +38,7 @@ func (r *ProductREST) RegisterRoute() *ProductREST {
 	productsGroup := r.apiRouterGroup.Group("/products")
 	{
 		// batches
-		productsGroup.DELETE("/create", r.CreateInBatches)
+		productsGroup.POST("/create", r.CreateInBatches)
 		productsGroup.DELETE("/delete", r.DeleteInBatches)
 		productsGroup.GET("/query", r.Query)
 	}

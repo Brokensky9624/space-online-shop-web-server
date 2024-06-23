@@ -1,0 +1,130 @@
+[
+    {
+        "name": "chair01",
+        "title": "木頭手把座椅-冬天小時光",
+        "desc": "深褐色烤漆，手把下方串珠式設計。細膩質感搭配極簡風格設計，打造居家恬靜氛圍。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair02",
+        "title": "一體成型椅子-一抹抹茶香",
+        "desc": "米白色細腳椅，搭配抹茶顏色包布。並在椅子背部做簍空設計。方便拿取搬動時抓握。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair03",
+        "title": "木條藤編椅子-經典交織線",
+        "desc": "木條交織出完美的椅背曲線，兩側跳脫傳統，設有矮把手。搭配空間可以打造日式小溫馨。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair04",
+        "title": "吊掛垂椅-陪你聽首搖籃曲",
+        "desc": "圓弧狀設計，以網羅造型編織，可承重100公斤，下擺有流蘇的設計，搖晃時會有翩翩起舞的畫面。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair05",
+        "title": "包覆型躺椅-溫馨一隅",
+        "desc": "圓弧狀設計一體成型。放個抱枕，拿起一本好書，這會是家中最溫馨的一隅。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair06",
+        "title": "沙發板凳組-慵懶時光",
+        "desc": "符合人體工學設計的躺椅，在忙碌一天過後，很適合放鬆發呆之處，搭配同款條紋小板凳。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair07",
+        "title": "工業造型椅-高效會議",
+        "desc": "網狀深色造型椅，椅腳踩流線型設計。整張椅子非常輕巧，搬動性很高。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair08",
+        "title": "圓弧躺椅-享受芬多精",
+        "desc": "符合人體工學設計的躺椅，座椅採用米色防水材質，椅腳採流線型設計。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair09",
+        "title": "鞦韆搖椅-美好童年回憶",
+        "desc": "麻繩綁製而成的鞦韆椅，可以安裝在空間室內。同時兼具美感與實用性。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair10",
+        "title": "暖色藤編椅-回憶輪播",
+        "desc": "木條織成的高椅背座椅，並設有手把。一杯咖啡與日記本，即可在書房度過一整個下午。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair11",
+        "title": "杏色沙發椅-休憩好地方",
+        "desc": "一人獨佔有自己的空間，兩人坐臥有一起的快樂，三個人分享也不會感到擁擠。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair12",
+        "title": "人體工學躺椅-設計師指定",
+        "desc": "俐落的設計，搭配八十度角的座椅，適合坐臥發想，待源源不絕的靈感襲捲而上。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair13",
+        "title": "木頭椅子-中島旁聊聊",
+        "desc": "椅被及坐墊為淡紅色點點織布，高級原木製成高挑椅身。很適合鄉村風格的空間。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair14",
+        "title": "金屬坐面椅-理性與感性",
+        "desc": "以金屬製成以身，並搭配白色椅腳。簡單俐落的設計，理性與感性兼具。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair15",
+        "title": "單人沙發椅-私人小空間",
+        "desc": "單人沙發椅，適合放在起居空間，一張椅子可以有獨立空間，擺放兩張與好友交談也很適宜。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "chair16",
+        "title": "躺臥沙發椅-生命力",
+        "desc": "橘色的半截式設計。不論是側躺還有坐臥都很適合。放在空間，有畫龍點睛的效果。",
+        "category": "chair",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    }
+]

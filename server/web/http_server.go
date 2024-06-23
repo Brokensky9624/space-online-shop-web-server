@@ -1,58 +1,65 @@
 package web
 
 import (
-	"fmt"
+	"sync"
 
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"space.online.shop.web.server/rest/member"
 	"space.online.shop.web.server/rest/product"
 	"space.online.shop.web.server/service"
+	"space.online.shop.web.server/web/jwt"
 )
 
-var webServer *WebServer
+var (
+	once   sync.Once
+	webSrv *webServer
+)
 
-type WebServer struct {
-	Engine     *gin.Engine
-	JWTMid     *jwt.GinJWTMiddleware
+type webServer struct {
+	engine     *gin.Engine
+	jwtAuth    jwt.IJWTAuth
 	SrvManager *service.ServiceManager
 }
 
-func New() *WebServer {
-	mid, err := NewJWTMid()
-	if err != nil {
-		panic(fmt.Errorf("jwt err: %s", err))
+func New() *webServer {
+	once.Do(func() {
+		webSrv = &webServer{
+			engine: gin.Default(),
+		}
+	})
+	webSrv.prepare()
+	return webSrv
+}
+
+func Server() *webServer {
+	return webSrv
+}
+
+func (w *webServer) prepare() {
+	if w.jwtAuth == nil {
+		w.loadJWTAuth()
 	}
-	webServer = &WebServer{
-		Engine: gin.Default(),
-		JWTMid: mid,
-	}
-	return webServer
 }
 
-func Server() *WebServer {
-	return webServer
+func (w *webServer) loadJWTAuth() {
+	f := jwt.GetJWTFactory()
+	w.jwtAuth = f.GetJWTAuth()
 }
 
-func (s *WebServer) SetSrvManager(srvManager *service.ServiceManager) *WebServer {
-	s.SrvManager = srvManager
-	return s
-}
-
-func (s *WebServer) Initialize() {
-	s.RegisterRoute()
+func (w *webServer) Initialize() {
+	w.RegisterRoute()
 	go func() {
-		webServer.Engine.Run(":3000")
+		w.engine.Run(":3000")
 	}()
 }
 
-func (s *WebServer) RegisterRoute() *WebServer {
-	s.Engine.POST("/login", s.JWTMid.LoginHandler)
-	s.Engine.POST("/refresh-token", s.JWTMid.RefreshHandler)
-	apiGroup := s.Engine.Group("/api")
-	apiGroup.Use(s.JWTMid.MiddlewareFunc())
-	memberREST := member.NewREST(s.SrvManager, apiGroup).RegisterRoute()
-	s.Engine.POST("/register", memberREST.Register)
-	_ = product.NewREST(s.SrvManager, apiGroup).RegisterRoute()
-	return s
+func (w *webServer) RegisterRoute() *webServer {
+	w.engine.POST("/login", w.jwtAuth.GetLoginHandler())
+	w.engine.POST("/refresh-token", w.jwtAuth.GetRefreshHandler())
+	apiGroup := w.engine.Group("/api")
+	apiGroup.Use(w.jwtAuth.GetMiddleware())
+	memberREST := member.NewREST(w.SrvManager, apiGroup).RegisterRoute()
+	w.engine.POST("/register", memberREST.Register)
+	_ = product.NewREST(w.SrvManager, apiGroup).RegisterRoute()
+	return w
 }

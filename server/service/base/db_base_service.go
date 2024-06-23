@@ -3,14 +3,14 @@ package base
 import (
 	"errors"
 
-	"space.online.shop.web.server/service/db/mysql"
+	"space.online.shop.web.server/service/db"
 )
 
 type DbBaseService struct {
-	DB *mysql.MysqlService
+	DB *db.DbService
 }
 
-func (srv *DbBaseService) SetDBService(DB *mysql.MysqlService) {
+func (srv *DbBaseService) SetDBService(DB *db.DbService) {
 	srv.DB = DB
 }
 

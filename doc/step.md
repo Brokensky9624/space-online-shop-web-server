@@ -21,11 +21,11 @@ https://space-online-shop.web.app/welcome
 Create networks, volumes. Start container
 
 ```sql
-docker-compose.exe -f mysql.yml up -d
+docker-compose.exe -f cfg\mysql\mysql.yml up -d
 ```
 
 Remove container, networks, volumes
 
 ```sql
-docker-compose.exe -f mysql.yml down --volumes
+docker-compose.exe -f cfg\mysql\mysql.yml down --volumes
 ```

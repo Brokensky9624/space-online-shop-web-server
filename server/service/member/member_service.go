@@ -6,14 +6,15 @@ import (
 
 	"gorm.io/gorm"
 	"space.online.shop.web.server/service/base"
-	"space.online.shop.web.server/service/db/mysql"
-	mysqlModel "space.online.shop.web.server/service/db/mysql/model"
+	"space.online.shop.web.server/service/db"
+	mysqlModel "space.online.shop.web.server/service/db/model"
 	memberTypes "space.online.shop.web.server/service/member/types"
 
+	"space.online.shop.web.server/util/logger"
 	"space.online.shop.web.server/util/tool"
 )
 
-func NewService(DB *mysql.MysqlService) *MemberService {
+func NewService(DB *db.DbService) *MemberService {
 	return &MemberService{
 		DbBaseService: &base.DbBaseService{
 			DB: DB,
@@ -218,7 +219,8 @@ func (s *MemberService) Members() ([]memberTypes.Member, error) {
 	if err != nil {
 		return nil, tool.PrefixError(errPreFix, err)
 	}
-
+	logger.SERVER.Debug("Test debug")
+	logger.SERVER.Info("Test info")
 	// find member list
 	var memberList []memberTypes.Member = make([]memberTypes.Member, 0)
 	var queryMemberList []mysqlModel.Member

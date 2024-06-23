@@ -7,14 +7,14 @@ import (
 	"strings"
 
 	"space.online.shop.web.server/service/base"
-	"space.online.shop.web.server/service/db/mysql"
-	mysqlModel "space.online.shop.web.server/service/db/mysql/model"
+	"space.online.shop.web.server/service/db"
+	mysqlModel "space.online.shop.web.server/service/db/model"
 	productTypes "space.online.shop.web.server/service/product/types"
 
 	"space.online.shop.web.server/util/tool"
 )
 
-func NewService(DB *mysql.MysqlService) *ProdocutService {
+func NewService(DB *db.DbService) *ProdocutService {
 	return &ProdocutService{
 		DbBaseService: &base.DbBaseService{
 			DB: DB,

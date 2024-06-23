@@ -1,4 +1,4 @@
-package web
+package jwt
 
 import (
 	"errors"
@@ -19,7 +19,23 @@ const (
 	secretKey        = "5BYrir4vrBMB2oFJVywHFSrvlim6kCRn" // secret key for JWT encrypt
 )
 
-func NewJWTMid() (*jwt.GinJWTMiddleware, error) {
+type IJWTAuth interface {
+	GetLoginHandler() gin.HandlerFunc
+	GetRefreshHandler() gin.HandlerFunc
+	GetMiddleware() gin.HandlerFunc
+}
+
+type defaultJWTAuth struct {
+	auth *jwt.GinJWTMiddleware
+}
+
+func newDefaultJWTAuth() IJWTAuth {
+	ja := &defaultJWTAuth{}
+	ja.prepare()
+	return ja
+}
+
+func (d *defaultJWTAuth) prepare() {
 	memberSrv := service.Manager().MemberService()
 	// JWT middleware initialization
 	mid, err := jwt.New(&jwt.GinJWTMiddleware{
@@ -77,5 +93,20 @@ func NewJWTMid() (*jwt.GinJWTMiddleware, error) {
 		TokenHeadName: "Bearer",
 		TimeFunc:      time.Now,
 	})
-	return mid, err
+	if err != nil {
+		panic(err)
+	}
+	d.auth = mid
+}
+
+func (a defaultJWTAuth) GetLoginHandler() gin.HandlerFunc {
+	return gin.HandlerFunc(a.auth.LoginHandler)
+}
+
+func (a defaultJWTAuth) GetRefreshHandler() gin.HandlerFunc {
+	return gin.HandlerFunc(a.auth.RefreshHandler)
+}
+
+func (a defaultJWTAuth) GetMiddleware() gin.HandlerFunc {
+	return a.auth.MiddlewareFunc()
 }
