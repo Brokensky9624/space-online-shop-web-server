@@ -6,7 +6,7 @@ package member
 
 // 	"space.online.shop.web.server/service/db/model"
 // 	mysqlSrv "space.online.shop.web.server/service/db/mysql"
-// 	"space.online.shop.web.server/util/tool"
+// 	"space.online.shop.web.server/shared/utils/tool"
 // )
 
 // type param = map[string]interface{}

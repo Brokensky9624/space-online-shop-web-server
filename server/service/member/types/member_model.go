@@ -2,7 +2,7 @@ package types
 
 import (
 	"space.online.shop.web.server/service/db/model"
-	"space.online.shop.web.server/util/tool"
+	"space.online.shop.web.server/shared/utils/tool"
 )
 
 type Member struct {

@@ -6,6 +6,7 @@ require (
 	github.com/appleboy/gin-jwt/v2 v2.9.2
 	github.com/gin-gonic/gin v1.9.1
 	github.com/magiconair/properties v1.8.7
+	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.22.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1

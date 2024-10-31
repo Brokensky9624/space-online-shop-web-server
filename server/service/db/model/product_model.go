@@ -4,7 +4,7 @@ import (
 	"reflect"
 
 	"gorm.io/gorm"
-	"space.online.shop.web.server/util/tool"
+	"space.online.shop.web.server/shared/utils/tool"
 )
 
 type Product struct {
@@ -17,7 +17,6 @@ type Product struct {
 	Manufacturer string `gorm:"size:200;not null"`
 	Status       uint   `gorm:"size:128;not null"`
 	Like         uint   `gorm:"size:1024000"`
-	OwnerID      uint   `gorm:"not null"`
 }
 
 func (Product) TableName() string {
@@ -27,15 +26,6 @@ func (Product) TableName() string {
 func (p *Product) SetID(productID uint) *Product {
 	p.ID = productID
 	return p
-}
-
-func (p *Product) SetOwner(userID uint) *Product {
-	p.OwnerID = userID
-	return p
-}
-
-func (p Product) IsOwner(userID uint) bool {
-	return p.OwnerID == userID
 }
 
 func ToProductModel(input interface{}) Product {

@@ -15,79 +15,69 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type SpaceOnlineEncoder struct {
+// =======================
+type MyLogEncoder struct {
 	*zapcore.EncoderConfig
 	buf            *buffer.Buffer
 	spaced         bool // include spaces after colons and commas
 	openNamespaces int
 
-	// for encoding generic values by reflection
 	reflectBuf *buffer.Buffer
 	reflectEnc zapcore.ReflectedEncoder
 }
 
-func (enc *SpaceOnlineEncoder) EncodeEntry(ent zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
+// =======================
+// Customize Part
+func (enc *MyLogEncoder) EncodeEntry(ent zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
+
 	final := enc.clone()
+
 	enc.EncodeTime(ent.Time, final)
 	final.buf.AppendString(" ")
 	enc.EncodeLevel(ent.Level, final)
-	final.buf.AppendString(fmt.Sprintf("\t[GO-%d]", getGOID()))
+	final.buf.AppendString(fmt.Sprintf("\t[GO-%d]", getGoID()))
 	enc.EncodeCaller(ent.Caller, final)
 	final.buf.AppendString("\t- ")
 	final.buf.AppendString(ent.Message)
 	final.buf.AppendString(enc.LineEnding)
 
-	ret := final.buf
-	putSpaceOnlineEncoder(final)
-	return ret, nil
+	var line = final.buf
+	putMyLogEncoder(final)
+
+	return line, nil
 }
 
-func encodeFmtTime(t time.Time, p zapcore.PrimitiveArrayEncoder) {
-	encoder := zapcore.TimeEncoderOfLayout("2006/01/02-15:04:05.000")
-	encoder(t, p)
-}
-
-func encodeFmtLevel(l zapcore.Level, p zapcore.PrimitiveArrayEncoder) {
-	text := fmt.Sprintf("[%s]", l.CapitalString())
-	p.AppendString(text)
-}
-
-func encodeFmtCaller(c zapcore.EntryCaller, p zapcore.PrimitiveArrayEncoder) {
-	text := fmt.Sprintf("[%s]", c.TrimmedPath())
-	p.AppendString(text)
-}
-
-func getGOID() int {
-	var id int
-	var b [64]byte
-	n := runtime.Stack(b[:], false)
-	stackStr := string(b[:n])
-	stackStr = strings.TrimPrefix(stackStr, "goroutine ")
-	fds := strings.Fields(stackStr)
-	if len(fds) > 0 {
-		nb, _ := strconv.Atoi(fds[0])
-		id = nb
+// ------
+func getGoID() int {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
+	id, err := strconv.Atoi(idField)
+	if err != nil {
+		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
 	}
 	return id
 }
 
-// For JSON-escaping; see SpaceOnlineEncoder.safeAddString below.
-const _hex = "0123456789abcdef"
+// =======================
+const (
+	// For JSON-escaping; see jsonEncoder.safeAddString below.
+	_hex = "0123456789abcdef"
+)
 
 var (
-	_jsonPool = sync.Pool{
-		New: func() interface{} {
-			return &SpaceOnlineEncoder{}
-		},
-	}
+	_myPool = sync.Pool{New: func() interface{} {
+		return &MyLogEncoder{}
+	}}
 	bufferpool = buffer.NewPool()
 )
 
-func getSpaceOnlineLogEncoder() *SpaceOnlineEncoder {
-	return _jsonPool.Get().(*SpaceOnlineEncoder)
+// =======================
+func getMyLogEncoder() *MyLogEncoder {
+	return _myPool.Get().(*MyLogEncoder)
 }
 
-func putSpaceOnlineEncoder(enc *SpaceOnlineEncoder) {
+func putMyLogEncoder(enc *MyLogEncoder) {
 	if enc.reflectBuf != nil {
 		enc.reflectBuf.Free()
 	}
@@ -97,10 +87,11 @@ func putSpaceOnlineEncoder(enc *SpaceOnlineEncoder) {
 	enc.openNamespaces = 0
 	enc.reflectBuf = nil
 	enc.reflectEnc = nil
-	_jsonPool.Put(enc)
+	_myPool.Put(enc)
 }
 
-// NewSpaceOnlineEncoder creates a fast, low-allocation JSON encoder. The encoder
+// =======================
+// NewJSONEncoder creates a fast, low-allocation JSON encoder. The encoder
 // appropriately escapes all field keys and values.
 //
 // Note that the encoder doesn't deduplicate keys, so it's possible to produce
@@ -112,79 +103,79 @@ func putSpaceOnlineEncoder(enc *SpaceOnlineEncoder) {
 // libraries will ignore duplicate key-value pairs (typically keeping the last
 // pair) when unmarshaling, but users should attempt to avoid adding duplicate
 // keys.
-func NewSpaceOnlineEncoder(cfg zapcore.EncoderConfig) zapcore.Encoder {
-	return newSpaceOnlineEncoder(cfg, false)
+func NewMyLogEncoder(cfg zapcore.EncoderConfig) zapcore.Encoder {
+	return newMyLogEncoder(cfg, false)
 }
 
-func newSpaceOnlineEncoder(cfg zapcore.EncoderConfig, spaced bool) *SpaceOnlineEncoder {
+func newMyLogEncoder(cfg zapcore.EncoderConfig, spaced bool) *MyLogEncoder {
 	if cfg.SkipLineEnding {
 		cfg.LineEnding = ""
 	} else if cfg.LineEnding == "" {
 		cfg.LineEnding = zapcore.DefaultLineEnding
 	}
 
-	return &SpaceOnlineEncoder{
+	return &MyLogEncoder{
 		EncoderConfig: &cfg,
 		buf:           bufferpool.Get(),
 		spaced:        spaced,
 	}
 }
 
-func (enc *SpaceOnlineEncoder) AddArray(key string, arr zapcore.ArrayMarshaler) error {
+func (enc *MyLogEncoder) AddArray(key string, arr zapcore.ArrayMarshaler) error {
 	enc.addKey(key)
 	return enc.AppendArray(arr)
 }
 
-func (enc *SpaceOnlineEncoder) AddObject(key string, obj zapcore.ObjectMarshaler) error {
+func (enc *MyLogEncoder) AddObject(key string, obj zapcore.ObjectMarshaler) error {
 	enc.addKey(key)
 	return enc.AppendObject(obj)
 }
 
-func (enc *SpaceOnlineEncoder) AddBinary(key string, val []byte) {
+func (enc *MyLogEncoder) AddBinary(key string, val []byte) {
 	enc.AddString(key, base64.StdEncoding.EncodeToString(val))
 }
 
-func (enc *SpaceOnlineEncoder) AddByteString(key string, val []byte) {
+func (enc *MyLogEncoder) AddByteString(key string, val []byte) {
 	enc.addKey(key)
 	enc.AppendByteString(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddBool(key string, val bool) {
+func (enc *MyLogEncoder) AddBool(key string, val bool) {
 	enc.addKey(key)
 	enc.AppendBool(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddComplex128(key string, val complex128) {
+func (enc *MyLogEncoder) AddComplex128(key string, val complex128) {
 	enc.addKey(key)
 	enc.AppendComplex128(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddComplex64(key string, val complex64) {
+func (enc *MyLogEncoder) AddComplex64(key string, val complex64) {
 	enc.addKey(key)
 	enc.AppendComplex64(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddDuration(key string, val time.Duration) {
+func (enc *MyLogEncoder) AddDuration(key string, val time.Duration) {
 	enc.addKey(key)
 	enc.AppendDuration(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddFloat64(key string, val float64) {
+func (enc *MyLogEncoder) AddFloat64(key string, val float64) {
 	enc.addKey(key)
 	enc.AppendFloat64(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddFloat32(key string, val float32) {
+func (enc *MyLogEncoder) AddFloat32(key string, val float32) {
 	enc.addKey(key)
 	enc.AppendFloat32(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddInt64(key string, val int64) {
+func (enc *MyLogEncoder) AddInt64(key string, val int64) {
 	enc.addKey(key)
 	enc.AppendInt64(val)
 }
 
-func (enc *SpaceOnlineEncoder) resetReflectBuf() {
+func (enc *MyLogEncoder) resetReflectBuf() {
 	if enc.reflectBuf == nil {
 		enc.reflectBuf = bufferpool.Get()
 		enc.reflectEnc = enc.NewReflectedEncoder(enc.reflectBuf)
@@ -197,7 +188,7 @@ var nullLiteralBytes = []byte("null")
 
 // Only invoke the standard JSON encoder if there is actually something to
 // encode; otherwise write JSON null literal directly.
-func (enc *SpaceOnlineEncoder) encodeReflected(obj interface{}) ([]byte, error) {
+func (enc *MyLogEncoder) encodeReflected(obj interface{}) ([]byte, error) {
 	if obj == nil {
 		return nullLiteralBytes, nil
 	}
@@ -209,7 +200,7 @@ func (enc *SpaceOnlineEncoder) encodeReflected(obj interface{}) ([]byte, error) 
 	return enc.reflectBuf.Bytes(), nil
 }
 
-func (enc *SpaceOnlineEncoder) AddReflected(key string, obj interface{}) error {
+func (enc *MyLogEncoder) AddReflected(key string, obj interface{}) error {
 	valueBytes, err := enc.encodeReflected(obj)
 	if err != nil {
 		return err
@@ -219,28 +210,28 @@ func (enc *SpaceOnlineEncoder) AddReflected(key string, obj interface{}) error {
 	return err
 }
 
-func (enc *SpaceOnlineEncoder) OpenNamespace(key string) {
+func (enc *MyLogEncoder) OpenNamespace(key string) {
 	enc.addKey(key)
 	enc.buf.AppendByte('{')
 	enc.openNamespaces++
 }
 
-func (enc *SpaceOnlineEncoder) AddString(key, val string) {
+func (enc *MyLogEncoder) AddString(key, val string) {
 	enc.addKey(key)
 	enc.AppendString(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddTime(key string, val time.Time) {
+func (enc *MyLogEncoder) AddTime(key string, val time.Time) {
 	enc.addKey(key)
 	enc.AppendTime(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddUint64(key string, val uint64) {
+func (enc *MyLogEncoder) AddUint64(key string, val uint64) {
 	enc.addKey(key)
 	enc.AppendUint64(val)
 }
 
-func (enc *SpaceOnlineEncoder) AppendArray(arr zapcore.ArrayMarshaler) error {
+func (enc *MyLogEncoder) AppendArray(arr zapcore.ArrayMarshaler) error {
 	enc.addElementSeparator()
 	enc.buf.AppendByte('[')
 	err := arr.MarshalLogArray(enc)
@@ -248,7 +239,7 @@ func (enc *SpaceOnlineEncoder) AppendArray(arr zapcore.ArrayMarshaler) error {
 	return err
 }
 
-func (enc *SpaceOnlineEncoder) AppendObject(obj zapcore.ObjectMarshaler) error {
+func (enc *MyLogEncoder) AppendObject(obj zapcore.ObjectMarshaler) error {
 	// Close ONLY new openNamespaces that are created during
 	// AppendObject().
 	old := enc.openNamespaces
@@ -262,12 +253,12 @@ func (enc *SpaceOnlineEncoder) AppendObject(obj zapcore.ObjectMarshaler) error {
 	return err
 }
 
-func (enc *SpaceOnlineEncoder) AppendBool(val bool) {
+func (enc *MyLogEncoder) AppendBool(val bool) {
 	enc.addElementSeparator()
 	enc.buf.AppendBool(val)
 }
 
-func (enc *SpaceOnlineEncoder) AppendByteString(val []byte) {
+func (enc *MyLogEncoder) AppendByteString(val []byte) {
 	enc.addElementSeparator()
 	enc.buf.AppendByte('"')
 	enc.safeAddByteString(val)
@@ -277,7 +268,7 @@ func (enc *SpaceOnlineEncoder) AppendByteString(val []byte) {
 // appendComplex appends the encoded form of the provided complex128 value.
 // precision specifies the encoding precision for the real and imaginary
 // components of the complex number.
-func (enc *SpaceOnlineEncoder) appendComplex(val complex128, precision int) {
+func (enc *MyLogEncoder) appendComplex(val complex128, precision int) {
 	enc.addElementSeparator()
 	// Cast to a platform-independent, fixed-size type.
 	r, i := float64(real(val)), float64(imag(val))
@@ -295,7 +286,7 @@ func (enc *SpaceOnlineEncoder) appendComplex(val complex128, precision int) {
 	enc.buf.AppendByte('"')
 }
 
-func (enc *SpaceOnlineEncoder) AppendDuration(val time.Duration) {
+func (enc *MyLogEncoder) AppendDuration(val time.Duration) {
 	cur := enc.buf.Len()
 	if e := enc.EncodeDuration; e != nil {
 		e(val, enc)
@@ -307,12 +298,12 @@ func (enc *SpaceOnlineEncoder) AppendDuration(val time.Duration) {
 	}
 }
 
-func (enc *SpaceOnlineEncoder) AppendInt64(val int64) {
+func (enc *MyLogEncoder) AppendInt64(val int64) {
 	enc.addElementSeparator()
 	enc.buf.AppendInt(val)
 }
 
-func (enc *SpaceOnlineEncoder) AppendReflected(val interface{}) error {
+func (enc *MyLogEncoder) AppendReflected(val interface{}) error {
 	valueBytes, err := enc.encodeReflected(val)
 	if err != nil {
 		return err
@@ -322,16 +313,11 @@ func (enc *SpaceOnlineEncoder) AppendReflected(val interface{}) error {
 	return err
 }
 
-func (enc *SpaceOnlineEncoder) AppendString(val string) {
+func (enc *MyLogEncoder) AppendString(val string) {
 	enc.safeAddString(val)
 }
 
-func (enc *SpaceOnlineEncoder) AppendTimeLayout(time time.Time, layout string) {
-	enc.addElementSeparator()
-	enc.buf.AppendTime(time, layout)
-}
-
-func (enc *SpaceOnlineEncoder) AppendTime(val time.Time) {
+func (enc *MyLogEncoder) AppendTime(val time.Time) {
 	cur := enc.buf.Len()
 	if e := enc.EncodeTime; e != nil {
 		e(val, enc)
@@ -343,42 +329,44 @@ func (enc *SpaceOnlineEncoder) AppendTime(val time.Time) {
 	}
 }
 
-func (enc *SpaceOnlineEncoder) AppendUint64(val uint64) {
+func (enc *MyLogEncoder) AppendUint64(val uint64) {
 	enc.addElementSeparator()
 	enc.buf.AppendUint(val)
 }
 
-func (enc *SpaceOnlineEncoder) AddInt(k string, v int)         { enc.AddInt64(k, int64(v)) }
-func (enc *SpaceOnlineEncoder) AddInt32(k string, v int32)     { enc.AddInt64(k, int64(v)) }
-func (enc *SpaceOnlineEncoder) AddInt16(k string, v int16)     { enc.AddInt64(k, int64(v)) }
-func (enc *SpaceOnlineEncoder) AddInt8(k string, v int8)       { enc.AddInt64(k, int64(v)) }
-func (enc *SpaceOnlineEncoder) AddUint(k string, v uint)       { enc.AddUint64(k, uint64(v)) }
-func (enc *SpaceOnlineEncoder) AddUint32(k string, v uint32)   { enc.AddUint64(k, uint64(v)) }
-func (enc *SpaceOnlineEncoder) AddUint16(k string, v uint16)   { enc.AddUint64(k, uint64(v)) }
-func (enc *SpaceOnlineEncoder) AddUint8(k string, v uint8)     { enc.AddUint64(k, uint64(v)) }
-func (enc *SpaceOnlineEncoder) AddUintptr(k string, v uintptr) { enc.AddUint64(k, uint64(v)) }
-func (enc *SpaceOnlineEncoder) AppendComplex64(v complex64)    { enc.appendComplex(complex128(v), 32) }
-func (enc *SpaceOnlineEncoder) AppendComplex128(v complex128)  { enc.appendComplex(complex128(v), 64) }
-func (enc *SpaceOnlineEncoder) AppendFloat64(v float64)        { enc.appendFloat(v, 64) }
-func (enc *SpaceOnlineEncoder) AppendFloat32(v float32)        { enc.appendFloat(float64(v), 32) }
-func (enc *SpaceOnlineEncoder) AppendInt(v int)                { enc.AppendInt64(int64(v)) }
-func (enc *SpaceOnlineEncoder) AppendInt32(v int32)            { enc.AppendInt64(int64(v)) }
-func (enc *SpaceOnlineEncoder) AppendInt16(v int16)            { enc.AppendInt64(int64(v)) }
-func (enc *SpaceOnlineEncoder) AppendInt8(v int8)              { enc.AppendInt64(int64(v)) }
-func (enc *SpaceOnlineEncoder) AppendUint(v uint)              { enc.AppendUint64(uint64(v)) }
-func (enc *SpaceOnlineEncoder) AppendUint32(v uint32)          { enc.AppendUint64(uint64(v)) }
-func (enc *SpaceOnlineEncoder) AppendUint16(v uint16)          { enc.AppendUint64(uint64(v)) }
-func (enc *SpaceOnlineEncoder) AppendUint8(v uint8)            { enc.AppendUint64(uint64(v)) }
-func (enc *SpaceOnlineEncoder) AppendUintptr(v uintptr)        { enc.AppendUint64(uint64(v)) }
+func (enc *MyLogEncoder) AddInt(k string, v int)         { enc.AddInt64(k, int64(v)) }
+func (enc *MyLogEncoder) AddInt32(k string, v int32)     { enc.AddInt64(k, int64(v)) }
+func (enc *MyLogEncoder) AddInt16(k string, v int16)     { enc.AddInt64(k, int64(v)) }
+func (enc *MyLogEncoder) AddInt8(k string, v int8)       { enc.AddInt64(k, int64(v)) }
+func (enc *MyLogEncoder) AddUint(k string, v uint)       { enc.AddUint64(k, uint64(v)) }
+func (enc *MyLogEncoder) AddUint32(k string, v uint32)   { enc.AddUint64(k, uint64(v)) }
+func (enc *MyLogEncoder) AddUint16(k string, v uint16)   { enc.AddUint64(k, uint64(v)) }
+func (enc *MyLogEncoder) AddUint8(k string, v uint8)     { enc.AddUint64(k, uint64(v)) }
+func (enc *MyLogEncoder) AddUintptr(k string, v uintptr) { enc.AddUint64(k, uint64(v)) }
+func (enc *MyLogEncoder) AppendComplex64(v complex64)    { enc.appendComplex(complex128(v), 32) }
+func (enc *MyLogEncoder) AppendComplex128(v complex128) {
+	enc.appendComplex(complex128(v), 64)
+}
+func (enc *MyLogEncoder) AppendFloat64(v float64) { enc.appendFloat(v, 64) }
+func (enc *MyLogEncoder) AppendFloat32(v float32) { enc.appendFloat(float64(v), 32) }
+func (enc *MyLogEncoder) AppendInt(v int)         { enc.AppendInt64(int64(v)) }
+func (enc *MyLogEncoder) AppendInt32(v int32)     { enc.AppendInt64(int64(v)) }
+func (enc *MyLogEncoder) AppendInt16(v int16)     { enc.AppendInt64(int64(v)) }
+func (enc *MyLogEncoder) AppendInt8(v int8)       { enc.AppendInt64(int64(v)) }
+func (enc *MyLogEncoder) AppendUint(v uint)       { enc.AppendUint64(uint64(v)) }
+func (enc *MyLogEncoder) AppendUint32(v uint32)   { enc.AppendUint64(uint64(v)) }
+func (enc *MyLogEncoder) AppendUint16(v uint16)   { enc.AppendUint64(uint64(v)) }
+func (enc *MyLogEncoder) AppendUint8(v uint8)     { enc.AppendUint64(uint64(v)) }
+func (enc *MyLogEncoder) AppendUintptr(v uintptr) { enc.AppendUint64(uint64(v)) }
 
-func (enc *SpaceOnlineEncoder) Clone() zapcore.Encoder {
+func (enc *MyLogEncoder) Clone() zapcore.Encoder {
 	clone := enc.clone()
 	clone.buf.Write(enc.buf.Bytes())
 	return clone
 }
 
-func (enc *SpaceOnlineEncoder) clone() *SpaceOnlineEncoder {
-	clone := getSpaceOnlineLogEncoder()
+func (enc *MyLogEncoder) clone() *MyLogEncoder {
+	clone := getMyLogEncoder()
 	clone.EncoderConfig = enc.EncoderConfig
 	clone.spaced = enc.spaced
 	clone.openNamespaces = enc.openNamespaces
@@ -386,18 +374,18 @@ func (enc *SpaceOnlineEncoder) clone() *SpaceOnlineEncoder {
 	return clone
 }
 
-func (enc *SpaceOnlineEncoder) truncate() {
+func (enc *MyLogEncoder) truncate() {
 	enc.buf.Reset()
 }
 
-func (enc *SpaceOnlineEncoder) closeOpenNamespaces() {
+func (enc *MyLogEncoder) closeOpenNamespaces() {
 	for i := 0; i < enc.openNamespaces; i++ {
 		enc.buf.AppendByte('}')
 	}
 	enc.openNamespaces = 0
 }
 
-func (enc *SpaceOnlineEncoder) addKey(key string) {
+func (enc *MyLogEncoder) addKey(key string) {
 	enc.addElementSeparator()
 	enc.buf.AppendByte('"')
 	enc.safeAddString(key)
@@ -408,7 +396,7 @@ func (enc *SpaceOnlineEncoder) addKey(key string) {
 	}
 }
 
-func (enc *SpaceOnlineEncoder) addElementSeparator() {
+func (enc *MyLogEncoder) addElementSeparator() {
 	last := enc.buf.Len() - 1
 	if last < 0 {
 		return
@@ -424,7 +412,7 @@ func (enc *SpaceOnlineEncoder) addElementSeparator() {
 	}
 }
 
-func (enc *SpaceOnlineEncoder) appendFloat(val float64, bitSize int) {
+func (enc *MyLogEncoder) appendFloat(val float64, bitSize int) {
 	enc.addElementSeparator()
 	switch {
 	case math.IsNaN(val):
@@ -441,23 +429,24 @@ func (enc *SpaceOnlineEncoder) appendFloat(val float64, bitSize int) {
 // safeAddString JSON-escapes a string and appends it to the internal buffer.
 // Unlike the standard library's encoder, it doesn't attempt to protect the
 // user from browser vulnerabilities or JSONP-related problems.
-func (enc *SpaceOnlineEncoder) safeAddString(s string) {
+func (enc *MyLogEncoder) safeAddString(s string) {
 	for i := 0; i < len(s); {
 		if enc.tryAddRuneSelf(s[i]) {
 			i++
 			continue
 		}
-		r, size := utf8.DecodeRuneInString(s)
+		r, size := utf8.DecodeRuneInString(s[i:])
 		if enc.tryAddRuneError(r, size) {
 			i++
 			continue
 		}
 		enc.buf.AppendString(s[i : i+size])
+		i += size
 	}
 }
 
 // safeAddByteString is no-alloc equivalent of safeAddString(string(s)) for s []byte.
-func (enc *SpaceOnlineEncoder) safeAddByteString(s []byte) {
+func (enc *MyLogEncoder) safeAddByteString(s []byte) {
 	for i := 0; i < len(s); {
 		if enc.tryAddRuneSelf(s[i]) {
 			i++
@@ -469,11 +458,13 @@ func (enc *SpaceOnlineEncoder) safeAddByteString(s []byte) {
 			continue
 		}
 		enc.buf.Write(s[i : i+size])
+		i += size
 	}
 }
 
-func (enc *SpaceOnlineEncoder) tryAddRuneSelf(b byte) bool {
-	if b > utf8.RuneSelf {
+// tryAddRuneSelf appends b if it is valid UTF-8 character represented in a single byte.
+func (enc *MyLogEncoder) tryAddRuneSelf(b byte) bool {
+	if b >= utf8.RuneSelf {
 		return false
 	}
 	if 0x20 <= b && b != '\\' && b != '"' {
@@ -502,7 +493,7 @@ func (enc *SpaceOnlineEncoder) tryAddRuneSelf(b byte) bool {
 	return true
 }
 
-func (enc *SpaceOnlineEncoder) tryAddRuneError(r rune, size int) bool {
+func (enc *MyLogEncoder) tryAddRuneError(r rune, size int) bool {
 	if r == utf8.RuneError && size == 1 {
 		enc.buf.AppendString(`\ufffd`)
 		return true
@@ -510,8 +501,8 @@ func (enc *SpaceOnlineEncoder) tryAddRuneError(r rune, size int) bool {
 	return false
 }
 
-func addFields(enc zapcore.ObjectEncoder, fields []zapcore.Field) {
-	for i := range fields {
-		fields[i].AddTo(enc)
-	}
-}
+// func addFields(enc zapcore.ObjectEncoder, fields []zapcore.Field) {
+// 	for i := range fields {
+// 		fields[i].AddTo(enc)
+// 	}
+// }

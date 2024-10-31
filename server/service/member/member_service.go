@@ -10,8 +10,8 @@ import (
 	mysqlModel "space.online.shop.web.server/service/db/model"
 	memberTypes "space.online.shop.web.server/service/member/types"
 
-	"space.online.shop.web.server/util/logger"
-	"space.online.shop.web.server/util/tool"
+	"space.online.shop.web.server/shared/utils/logger"
+	"space.online.shop.web.server/shared/utils/tool"
 )
 
 func NewService(DB *db.DbService) *MemberService {

@@ -6,7 +6,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"space.online.shop.web.server/service/db/internal"
-	"space.online.shop.web.server/util/logger"
+	"space.online.shop.web.server/shared/utils/logger"
 )
 
 // = mysqlDbBuilder

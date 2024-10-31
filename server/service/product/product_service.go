@@ -1,17 +1,17 @@
 package product
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"google.golang.org/protobuf/internal/errors"
 	"space.online.shop.web.server/service/base"
 	"space.online.shop.web.server/service/db"
 	mysqlModel "space.online.shop.web.server/service/db/model"
 	productTypes "space.online.shop.web.server/service/product/types"
 
-	"space.online.shop.web.server/util/tool"
+	"space.online.shop.web.server/shared/utils/tool"
 )
 
 func NewService(DB *db.DbService) *ProdocutService {
@@ -39,7 +39,6 @@ func (s *ProdocutService) Create(userID uint, param productTypes.CreateParam) er
 		return tool.PrefixError(errPreFix, err)
 	}
 	model := mysqlModel.ToProductModel(param)
-	model.SetOwner(userID)
 
 	if err := s.DB.Create(&model).Error; err != nil {
 		return tool.PrefixError(errPreFix, err)
@@ -60,25 +59,27 @@ func (s *ProdocutService) Edit(userID uint, param productTypes.EditParam) error 
 		return tool.PrefixError(errPreFix, err)
 	}
 
-	errPreFix = fmt.Sprintf("failed to edit product %d", param.ID)
-
-	var queryModel mysqlModel.Product
-	queryModel.SetID(param.ID)
-	var matchModel mysqlModel.Product
-	if err := s.DB.Where(queryModel).Take(&matchModel).Error; err != nil {
-		return tool.PrefixError(errPreFix, err)
+	var product productTypes.Product
+	if err := s.DB.First(&product, param.ID).Error; err != nil {
+		errors.Wrap(err, "failed to get product")
+		return err
 	}
 
-	if !matchModel.IsOwner(userID) {
-		return tool.PrefixError(errPreFix, errors.New("you can not edit the product which does not belongs to you"))
-	}
+	// errPreFix = fmt.Sprintf("failed to edit product %d", param.ID)
 
-	editModel := mysqlModel.ToProductModel(param)
-	if err := s.DB.Where(matchModel).Take(&matchModel).Updates(&editModel).Error; err != nil {
-		return tool.PrefixError(errPreFix, err)
-	}
+	// var queryModel mysqlModel.Product
+	// queryModel.SetID(param.ID)
+	// var matchModel mysqlModel.Product
+	// if err := s.DB.Where(queryModel).Take(&matchModel).Error; err != nil {
+	// 	return tool.PrefixError(errPreFix, err)
+	// }
 
-	fmt.Printf("product %d edit successfully!\n", editModel.ID)
+	// editModel := mysqlModel.ToProductModel(param)
+	// if err := s.DB.Where(matchModel).Take(&matchModel).Updates(&editModel).Error; err != nil {
+	// 	return tool.PrefixError(errPreFix, err)
+	// }
+
+	fmt.Printf("succeed to edit product, product_id: %d, user_id: %d\n", product.ID)
 	return nil
 }
 
@@ -128,10 +129,6 @@ func (s *ProdocutService) Delete(userID uint, param productTypes.DeleteParam) er
 
 	if err := s.DB.Where(queryModel).Take(&matchModel).Error; err != nil {
 		return tool.PrefixError(errPreFix, err)
-	}
-
-	if !matchModel.IsOwner(userID) {
-		return tool.PrefixError(errPreFix, errors.New("you can not edit the product which does not belongs to you"))
 	}
 
 	var deleteModel mysqlModel.Product
@@ -188,7 +185,6 @@ func (s *ProdocutService) CreateInBatches(userID uint, params []productTypes.Cre
 	models := []mysqlModel.Product{}
 	for _, param := range params {
 		model := mysqlModel.ToProductModel(param)
-		model.OwnerID = userID
 		models = append(models, model)
 	}
 
@@ -223,11 +219,6 @@ func (s *ProdocutService) DeleteInBatches(userID uint, param productTypes.Delete
 
 		if err := s.DB.Where(queryModel).Take(&matchModel).Error; err != nil {
 			errSum = tool.MergeErrors(errSum, tool.PrefixError(errPreFix, err))
-			continue
-		}
-
-		if !matchModel.IsOwner(userID) {
-			errSum = tool.MergeErrors(errSum, errors.New("you can not edit the product which does not belongs to you"))
 			continue
 		}
 

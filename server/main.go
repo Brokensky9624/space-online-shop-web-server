@@ -10,8 +10,7 @@ import (
 	"space.online.shop.web.server/service/common"
 	"space.online.shop.web.server/service/db"
 	"space.online.shop.web.server/service/db/builder"
-	"space.online.shop.web.server/util/logger"
-	_ "space.online.shop.web.server/util/logger"
+	"space.online.shop.web.server/shared/utils/logger"
 )
 
 func main() {
@@ -19,6 +18,7 @@ func main() {
 	var stoppers []common.Stoppable
 	defer func() {
 		cancel()
+		logger.CloseLoggers()
 		common.StopAll(stoppers...)
 	}()
 	// prepare db
@@ -56,6 +56,11 @@ func main() {
 	logger.SERVER.Debug("%s did good job.", name)
 
 	// Set up signal handling to capture SIGINT and SIGTERM signals
+	handleSignal()
+}
+
+func handleSignal() {
+	// Set up signal handling to capture SIGINT and SIGTERM signals
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 	for {
@@ -63,8 +68,8 @@ func main() {
 		switch c {
 		case syscall.SIGHUP:
 			// rotate logger
-			logger.FileLoggerRotate()
-		case syscall.SIGINT, syscall.SIGTERM:
+			logger.RotateFileLoggers()
+		default:
 			return
 		}
 	}

@@ -1,6 +1,6 @@
 package response
 
-import "space.online.shop.web.server/util/tool"
+import "space.online.shop.web.server/shared/utils/tool"
 
 const (
 	success = "success"

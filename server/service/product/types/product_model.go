@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"space.online.shop.web.server/util/tool"
+	"space.online.shop.web.server/shared/utils/tool"
 )
 
 type ProductStatus uint
@@ -37,7 +37,6 @@ type Product struct {
 	Like         uint      `json:"like"`
 	UpdatedAt    time.Time `json:"updateAt"`
 	CreatedAt    time.Time `json:"createAt"`
-	OwnerID      uint      `json:"ownerID"`
 }
 
 func ToProduct(input interface{}) Product {
@@ -58,7 +57,6 @@ type CreateParam struct {
 	Manufacturer string `json:"manufacturer" required:"true"`
 	Status       uint   `json:"status"`
 	Like         uint   `json:"like"`
-	OwnerID      uint   `json:"ownerID"`
 }
 
 func (param CreateParam) Check() error {
@@ -81,14 +79,12 @@ func (param DetailParam) Check() error {
 
 type EditParam struct {
 	ID           uint   `json:"id" required:"true"`
-	Title        string `json:"title"`
 	Name         string `json:"name"`
+	Title        string `json:"title"`
 	Desc         string `json:"desc"`
 	Category     string `json:"category"`
 	Brand        string `json:"brand"`
 	Manufacturer string `json:"manufacturer"`
-	Status       uint   `json:"status"`
-	Like         uint   `json:"like"`
 }
 
 func (param EditParam) Check() error {
