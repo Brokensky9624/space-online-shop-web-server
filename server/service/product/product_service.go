@@ -1,16 +1,18 @@
 package product
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"google.golang.org/protobuf/internal/errors"
+	"gorm.io/gorm"
 	"space.online.shop.web.server/service/base"
 	"space.online.shop.web.server/service/db"
 	mysqlModel "space.online.shop.web.server/service/db/model"
 	productTypes "space.online.shop.web.server/service/product/types"
 
+	"space.online.shop.web.server/shared/utils/logger"
 	"space.online.shop.web.server/shared/utils/tool"
 )
 
@@ -32,17 +34,20 @@ func (s *ProdocutService) Create(userID uint, param productTypes.CreateParam) er
 
 	// check step
 	if err := s.CheckDB(); err != nil {
-		return tool.PrefixError(errPreFix, err)
+		return tool.PrefixError(fmt.Sprintf("%s: database connection error, user_id: %v", errPreFix, userID), err)
 	}
 
 	if err := param.Check(); err != nil {
-		return tool.PrefixError(errPreFix, err)
+		return tool.PrefixError(fmt.Sprintf("%s: parameter error, user_id: %v", errPreFix, userID), err)
 	}
-	model := mysqlModel.ToProductModel(param)
 
-	if err := s.DB.Create(&model).Error; err != nil {
-		return tool.PrefixError(errPreFix, err)
+	createProduct := param.ToModel()
+
+	if err := s.DB.Create(&createProduct).Error; err != nil {
+		return tool.PrefixError(fmt.Sprintf("%s: create error, user_id: %v, product_id: %v", errPreFix, userID, createProduct.ID), err)
 	}
+
+	logger.SERVER.Info(fmt.Sprintf("succeed to create product, user_id: %v, product_id: %v", userID, createProduct.ID))
 
 	return nil
 }
@@ -51,35 +56,29 @@ func (s *ProdocutService) Edit(userID uint, param productTypes.EditParam) error 
 	var errPreFix string = "failed to edit product"
 
 	// check step
-	err := s.CheckDB()
-	if err != nil {
-		return tool.PrefixError(errPreFix, err)
-	}
-	if err = param.Check(); err != nil {
-		return tool.PrefixError(errPreFix, err)
+	if err := s.CheckDB(); err != nil {
+		return tool.PrefixError(fmt.Sprintf("%s: database connection error, user_id: %v", errPreFix, userID), err)
 	}
 
-	var product productTypes.Product
-	if err := s.DB.First(&product, param.ID).Error; err != nil {
-		errors.Wrap(err, "failed to get product")
-		return err
+	if err := param.Check(); err != nil {
+		return tool.PrefixError(fmt.Sprintf("%s: parameter error, user_id: %v", errPreFix, userID), err)
 	}
 
-	// errPreFix = fmt.Sprintf("failed to edit product %d", param.ID)
+	var queryProduct mysqlModel.Product
+	if err := s.DB.First(&queryProduct, param.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return tool.PrefixError(fmt.Sprintf("%s: product not found, user_id: %v, param_id: %v", errPreFix, userID, param.ID), err)
+		}
+		return tool.PrefixError(fmt.Sprintf("%s: database error, user_id: %v, param_id: %v", errPreFix, userID, param.ID), err)
+	}
 
-	// var queryModel mysqlModel.Product
-	// queryModel.SetID(param.ID)
-	// var matchModel mysqlModel.Product
-	// if err := s.DB.Where(queryModel).Take(&matchModel).Error; err != nil {
-	// 	return tool.PrefixError(errPreFix, err)
-	// }
+	editProduct := param.ToModel()
 
-	// editModel := mysqlModel.ToProductModel(param)
-	// if err := s.DB.Where(matchModel).Take(&matchModel).Updates(&editModel).Error; err != nil {
-	// 	return tool.PrefixError(errPreFix, err)
-	// }
+	if err := s.DB.Model(&queryProduct).Updates(editProduct).Error; err != nil {
+		return tool.PrefixError(fmt.Sprintf("%s: updates error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+	}
 
-	fmt.Printf("succeed to edit product, product_id: %d, user_id: %d\n", product.ID)
+	logger.SERVER.Info("succeed to edit product, user_id: %v, product_id: %v\n", userID, queryProduct.ID)
 	return nil
 }
 

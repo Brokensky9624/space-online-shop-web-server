@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	mysqlModel "space.online.shop.web.server/service/db/model"
 	"space.online.shop.web.server/shared/utils/tool"
 )
 
@@ -59,6 +60,19 @@ type CreateParam struct {
 	Like         uint   `json:"like"`
 }
 
+func (param CreateParam) ToModel() mysqlModel.Product {
+	return mysqlModel.Product{
+		Name:         param.Name,
+		Title:        param.Title,
+		Desc:         param.Desc,
+		Category:     param.Category,
+		Brand:        param.Brand,
+		Manufacturer: param.Manufacturer,
+		Status:       param.Status,
+		Like:         param.Like,
+	}
+}
+
 func (param CreateParam) Check() error {
 	if err := tool.CheckRequiredFields(param); err != nil {
 		return err
@@ -89,6 +103,17 @@ type EditParam struct {
 
 func (param EditParam) Check() error {
 	return tool.CheckRequiredFields(param)
+}
+
+func (param EditParam) ToModel() mysqlModel.Product {
+	return mysqlModel.Product{
+		Name:         param.Name,
+		Title:        param.Title,
+		Desc:         param.Desc,
+		Category:     param.Category,
+		Brand:        param.Brand,
+		Manufacturer: param.Manufacturer,
+	}
 }
 
 type LikeParam struct {
