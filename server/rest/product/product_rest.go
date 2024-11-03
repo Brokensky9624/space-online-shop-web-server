@@ -120,7 +120,7 @@ func (r *ProductREST) Like(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
 		return
 	}
-	param.ID = id
+	param.ProductID = id
 
 	// get user
 	user, exists := c.Get("id")

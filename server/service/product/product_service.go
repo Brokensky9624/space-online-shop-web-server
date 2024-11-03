@@ -86,25 +86,35 @@ func (s *ProdocutService) Like(userID uint, param productTypes.LikeParam) error 
 	var errPreFix string = "failed to like product"
 
 	// check step
-	err := s.CheckDB()
-	if err != nil {
-		return tool.PrefixError(errPreFix, err)
-	}
-	if err = param.Check(); err != nil {
-		return tool.PrefixError(errPreFix, err)
+	if err := s.CheckDB(); err != nil {
+		return tool.PrefixError(fmt.Sprintf("%s: database connection error, user_id: %v", errPreFix, userID), err)
 	}
 
-	errPreFix = fmt.Sprintf("failed to like product %d", param.ID)
-
-	var queryModel mysqlModel.Product
-	queryModel.SetID(param.ID)
-	var matchModel mysqlModel.Product
-	editModel := mysqlModel.ToProductModel(param)
-	if err := s.DB.Where(queryModel).Take(&matchModel).Updates(&editModel).Error; err != nil {
-		return tool.PrefixError(errPreFix, err)
+	if err := param.Check(); err != nil {
+		return tool.PrefixError(fmt.Sprintf("%s: parameter error, user_id: %v", errPreFix, userID), err)
 	}
 
-	fmt.Printf("member %d likes product %d successfully!\n", userID, editModel.ID)
+	var queryMember mysqlModel.Member
+	if err := s.DB.First(&queryMember, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return tool.PrefixError(fmt.Sprintf("%s: member not found, user_id: %v", errPreFix, userID), err)
+		}
+		return tool.PrefixError(fmt.Sprintf("%s: database error, user_id: %v", errPreFix, userID), err)
+	}
+
+	var queryProduct mysqlModel.Product
+	if err := s.DB.First(&queryProduct, param.ProductID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return tool.PrefixError(fmt.Sprintf("%s: product not found, user_id: %v, param_id: %v", errPreFix, userID, param.ProductID), err)
+		}
+		return tool.PrefixError(fmt.Sprintf("%s: database error, user_id: %v, param_id: %v", errPreFix, userID, param.ProductID), err)
+	}
+
+	if err := s.DB.Model(&queryProduct).Association("Likes").Append(&queryMember); err != nil {
+		return tool.PrefixError(fmt.Sprintf("%s: append error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+	}
+
+	logger.SERVER.Info("succeed to like product, user_id: %v, product_id: %v\n", userID, queryProduct.ID)
 	return nil
 }
 

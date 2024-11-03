@@ -57,7 +57,6 @@ type CreateParam struct {
 	Brand        string `json:"brand" required:"true"`
 	Manufacturer string `json:"manufacturer" required:"true"`
 	Status       uint   `json:"status"`
-	Like         uint   `json:"like"`
 }
 
 func (param CreateParam) ToModel() mysqlModel.Product {
@@ -69,7 +68,6 @@ func (param CreateParam) ToModel() mysqlModel.Product {
 		Brand:        param.Brand,
 		Manufacturer: param.Manufacturer,
 		Status:       param.Status,
-		Like:         param.Like,
 	}
 }
 
@@ -117,7 +115,7 @@ func (param EditParam) ToModel() mysqlModel.Product {
 }
 
 type LikeParam struct {
-	ID uint `json:"id" required:"true"`
+	ProductID uint `json:"productId" required:"true"`
 }
 
 func (param LikeParam) Check() error {
