@@ -7,10 +7,15 @@ import (
 	"syscall"
 	"time"
 
+	"space.online.shop.web.server/service"
 	"space.online.shop.web.server/service/common"
 	"space.online.shop.web.server/service/db"
 	"space.online.shop.web.server/service/db/builder"
+	"space.online.shop.web.server/service/db/model"
+	"space.online.shop.web.server/service/member"
+	"space.online.shop.web.server/service/product"
 	"space.online.shop.web.server/shared/utils/logger"
+	"space.online.shop.web.server/web"
 )
 
 func main() {
@@ -37,23 +42,23 @@ func main() {
 		builder.WithConnMaxIdleTime(20*time.Minute),
 	)
 
-	dbSrv := db.NewDbService(ctx, dbBuilder)
+	dbSrv := db.NewDbService(ctx, dbBuilder, db.WithMigratorList(
+		&model.Member{},
+		&model.Product{},
+		&model.MemberProductLikes{},
+	))
 	stoppers = append(stoppers, dbSrv)
 	go dbSrv.Run()
 
 	// setup services to service manager
-	// memberSrv := member.NewService(dbSrv)
-	// productSrv := product.NewService(dbSrv)
-	// srvManager := service.NewManager().
-	// 	SetMemberService(memberSrv).
-	// 	SetProductService(productSrv)
+	memberSrv := member.NewService(dbSrv)
+	productSrv := product.NewService(dbSrv)
+	srvManager := service.NewManager().
+		SetMemberService(memberSrv).
+		SetProductService(productSrv)
 
 	// setup web server and router
-	// web.New().SetSrvManager(srvManager).Initialize()
-
-	logger.SERVER.Debug("all ready")
-	name := "Jason"
-	logger.SERVER.Debug("%s did good job.", name)
+	web.New(srvManager).Initialize()
 
 	// Set up signal handling to capture SIGINT and SIGTERM signals
 	handleSignal()

@@ -21,10 +21,11 @@ type webServer struct {
 	SrvManager *service.ServiceManager
 }
 
-func New() *webServer {
+func New(SrvManager *service.ServiceManager) *webServer {
 	once.Do(func() {
 		webSrv = &webServer{
-			engine: gin.Default(),
+			engine:     gin.Default(),
+			SrvManager: SrvManager,
 		}
 	})
 	webSrv.prepare()

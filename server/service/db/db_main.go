@@ -5,7 +5,8 @@ import (
 	"sync"
 
 	"gorm.io/gorm"
-	"space.online.shop.web.server/service/db/interfaces"
+	dbInterfaces "space.online.shop.web.server/service/db/interfaces"
+	"space.online.shop.web.server/shared/interfaces"
 )
 
 var (
@@ -56,7 +57,7 @@ func (d *DbService) Stop() {
 }
 
 // = export functions
-func NewDbService(ctx context.Context, dbBuilder interfaces.IDbBuilder) *DbService {
+func NewDbService(ctx context.Context, dbBuilder dbInterfaces.IDbBuilder, opts ...interfaces.IOption[*DbService]) *DbService {
 	once.Do(func() {
 		gormDB, err := dbBuilder.BuildDB()
 		if err != nil {
@@ -70,6 +71,9 @@ func NewDbService(ctx context.Context, dbBuilder interfaces.IDbBuilder) *DbServi
 		if err := tmpDb.ping(); err != nil {
 			panic(err)
 		}
+		for _, opt := range opts {
+			opt.Apply(tmpDb)
+		}
 		if err := tmpDb.prepare(); err != nil {
 			panic(err)
 		}
@@ -80,4 +84,10 @@ func NewDbService(ctx context.Context, dbBuilder interfaces.IDbBuilder) *DbServi
 
 func Service() *DbService {
 	return db
+}
+
+func WithMigratorList(migratorList ...interface{}) interfaces.IOption[*DbService] {
+	return interfaces.OptionFunc[*DbService](func(db *DbService) {
+		db.migratorList = migratorList
+	})
 }

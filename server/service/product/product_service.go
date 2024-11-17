@@ -122,35 +122,41 @@ func (s *ProdocutService) Delete(userID uint, param productTypes.DeleteParam) er
 	var errPreFix string = "failed to delete product"
 
 	// check step
-	err := s.CheckDB()
-	if err != nil {
-		return tool.PrefixError(errPreFix, err)
-	}
-	if err = param.Check(); err != nil {
-		return tool.PrefixError(errPreFix, err)
+	if err := s.CheckDB(); err != nil {
+		return tool.PrefixError(fmt.Sprintf("%s: database connection error, user_id: %v", errPreFix, userID), err)
 	}
 
-	errPreFix = fmt.Sprintf("failed to delete product %d", param.ID)
+	if err := param.Check(); err != nil {
+		return tool.PrefixError(fmt.Sprintf("%s: parameter error, user_id: %v", errPreFix, userID), err)
+	}
 
-	var queryModel mysqlModel.Product
-	queryModel.SetID(param.ID)
-	var matchModel mysqlModel.Product
+	if err := s.DB.Transaction(func(tx *gorm.DB) error {
+		var queryProduct mysqlModel.Product
+		if err := s.DB.First(&queryProduct, param.ID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return tool.PrefixError(fmt.Sprintf("%s: product not found, user_id: %v, param_id: %v", errPreFix, userID, param.ID), err)
+			}
+			return tool.PrefixError(fmt.Sprintf("%s: database error, user_id: %v, param_id: %v", errPreFix, userID, param.ID), err)
+		}
 
-	if err := s.DB.Where(queryModel).Take(&matchModel).Error; err != nil {
+		if err := s.DB.Model(&queryProduct).Association("Likes").Clear(); err != nil {
+			return tool.PrefixError(fmt.Sprintf("%s: clear error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+		}
+
+		if err := s.DB.Delete(&queryProduct).Error; err != nil {
+			return tool.PrefixError(fmt.Sprintf("%s: delete error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+		}
+
+		if err := s.DB.Unscoped().Delete(&queryProduct).Error; err != nil {
+			return tool.PrefixError(fmt.Sprintf("%s: unscoped delete error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+		}
+
+		return nil
+	}); err != nil {
 		return tool.PrefixError(errPreFix, err)
 	}
 
-	var deleteModel mysqlModel.Product
-	deleteModel.SetID(matchModel.ID)
-	if err := s.DB.Delete(&deleteModel).Error; err != nil {
-		return tool.PrefixError(errPreFix, err)
-	}
-
-	if err := s.DB.Unscoped().Delete(&deleteModel).Error; err != nil {
-		return tool.PrefixError(errPreFix, err)
-	}
-
-	fmt.Printf("member %d deletes product %d successfully!\n", userID, deleteModel.ID)
+	fmt.Printf("member %d deletes product %d successfully!\n", userID, param.ID)
 	return nil
 }
 
