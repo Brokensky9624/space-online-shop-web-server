@@ -3,8 +3,6 @@ package product
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"gorm.io/gorm"
 	"space.online.shop.web.server/service/base"
@@ -13,267 +11,333 @@ import (
 	productTypes "space.online.shop.web.server/service/product/types"
 
 	"space.online.shop.web.server/shared/utils/logger"
-	"space.online.shop.web.server/shared/utils/tool"
 )
 
-func NewService(DB *db.DbService) *ProdocutService {
-	return &ProdocutService{
+func NewService(DB *db.DbService) *ProductService {
+	return &ProductService{
 		DbBaseService: &base.DbBaseService{
 			DB: DB,
 		},
 	}
 }
 
-type ProdocutService struct {
+type ProductService struct {
 	*base.DbBaseService
 }
 
-// single
-func (s *ProdocutService) Create(userID uint, param productTypes.CreateParam) error {
-	var errPreFix string = "failed to create product"
+func (s *ProductService) Create(userID uint, params ...productTypes.CreateParam) ([]uint, error) {
+	idList := []uint{}
 
-	// check step
 	if err := s.CheckDB(); err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: database connection error, user_id: %v", errPreFix, userID), err)
+		logger.SERVER.Error("database connection error, err: %v", err)
+		return idList, fmt.Errorf("database connection error")
 	}
 
+	idList, err := s.create(userID, params...)
+	if err != nil {
+		return idList, err
+	}
+
+	return idList, nil
+}
+
+func (s *ProductService) create(userID uint, params ...productTypes.CreateParam) ([]uint, error) {
+	idList := []uint{}
+	var anyError bool
+
+	for _, param := range params {
+		id, err := s.createOne(userID, param)
+		if err != nil {
+			anyError = true
+			continue
+		}
+		idList = append(idList, id)
+	}
+
+	if anyError {
+		return idList, fmt.Errorf("some product failed to create")
+	}
+
+	logger.SERVER.Info("succeed in create products, user_id: %v, product_id_list: %v", userID, idList)
+	return idList, nil
+}
+
+func (s *ProductService) createOne(userID uint, param productTypes.CreateParam) (uint, error) {
 	if err := param.Check(); err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: parameter error, user_id: %v", errPreFix, userID), err)
+		logger.SERVER.Error("invalid parameter, param: %+v, err: %v", userID, param, err)
+		return 0, fmt.Errorf("invalid parameter")
 	}
 
 	createProduct := param.ToModel()
-
 	if err := s.DB.Create(&createProduct).Error; err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: create error, user_id: %v, product_id: %v", errPreFix, userID, createProduct.ID), err)
+		logger.SERVER.Error("failed to create product, user_id: %d, param: %+v, err: %v", userID, param, err)
+		return 0, fmt.Errorf("failed to create product")
 	}
 
-	logger.SERVER.Info(fmt.Sprintf("succeed to create product, user_id: %v, product_id: %v", userID, createProduct.ID))
+	logger.SERVER.Info("succeed in creating one product, user_id: %v, product_id: %v", userID, createProduct.ID)
+	return createProduct.ID, nil
+}
+
+func (s *ProductService) Edit(userID uint, param productTypes.EditParam) error {
+	if err := s.CheckDB(); err != nil {
+		logger.SERVER.Error("database connection error, err: %v", err)
+		return fmt.Errorf("database connection error")
+	}
+
+	if err := s.edit(userID, param); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (s *ProdocutService) Edit(userID uint, param productTypes.EditParam) error {
-	var errPreFix string = "failed to edit product"
-
-	// check step
-	if err := s.CheckDB(); err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: database connection error, user_id: %v", errPreFix, userID), err)
-	}
-
+func (s *ProductService) edit(userID uint, param productTypes.EditParam) error {
 	if err := param.Check(); err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: parameter error, user_id: %v", errPreFix, userID), err)
+		logger.SERVER.Error("invalid parameter, user_id: %d, param: %+v, err: %v", userID, param, err)
+		return fmt.Errorf("invalid parameter")
 	}
 
 	var queryProduct mysqlModel.Product
 	if err := s.DB.First(&queryProduct, param.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return tool.PrefixError(fmt.Sprintf("%s: product not found, user_id: %v, param_id: %v", errPreFix, userID, param.ID), err)
+			logger.SERVER.Error("product not found, user_id: %v, product_id: %v", userID, param.ID)
+			return fmt.Errorf("product not found")
 		}
-		return tool.PrefixError(fmt.Sprintf("%s: database error, user_id: %v, param_id: %v", errPreFix, userID, param.ID), err)
+		logger.SERVER.Error("database error, user_id: %v, product_id: %v, err: %v", userID, param.ID, err)
+		return fmt.Errorf("database error")
 	}
 
 	editProduct := param.ToModel()
 
 	if err := s.DB.Model(&queryProduct).Updates(editProduct).Error; err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: updates error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+		logger.SERVER.Error("failed to updates product, user_id: %d, param: %+v, err: %v", userID, param, err)
+		return fmt.Errorf("failed to updates product")
 	}
 
-	logger.SERVER.Info("succeed to edit product, user_id: %v, product_id: %v\n", userID, queryProduct.ID)
+	logger.SERVER.Info("succeed in updating product, user_id: %v, product_id: %v\n", userID, queryProduct.ID)
 	return nil
 }
 
-func (s *ProdocutService) Like(userID uint, param productTypes.LikeParam) error {
-	var errPreFix string = "failed to like product"
-
-	// check step
+func (s *ProductService) Like(userID uint, param productTypes.LikeParam) error {
 	if err := s.CheckDB(); err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: database connection error, user_id: %v", errPreFix, userID), err)
+		logger.SERVER.Error("database connection error, err: %v", err)
+		return fmt.Errorf("database connection error")
 	}
 
+	if err := s.like(userID, param); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ProductService) like(userID uint, param productTypes.LikeParam) error {
 	if err := param.Check(); err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: parameter error, user_id: %v", errPreFix, userID), err)
+		logger.SERVER.Error("invalid parameter, user_id: %d, param: %+v, err: %v", userID, param, err)
+		return fmt.Errorf("invalid parameter")
 	}
 
 	var queryMember mysqlModel.Member
 	if err := s.DB.First(&queryMember, userID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return tool.PrefixError(fmt.Sprintf("%s: member not found, user_id: %v", errPreFix, userID), err)
+			logger.SERVER.Error("member not found, user_id: %v", userID)
+			return fmt.Errorf("member not found")
 		}
-		return tool.PrefixError(fmt.Sprintf("%s: database error, user_id: %v", errPreFix, userID), err)
+		logger.SERVER.Error("database error, user_id: %v, err: %v", userID, err)
+		return fmt.Errorf("database error")
 	}
 
 	var queryProduct mysqlModel.Product
 	if err := s.DB.First(&queryProduct, param.ProductID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return tool.PrefixError(fmt.Sprintf("%s: product not found, user_id: %v, param_id: %v", errPreFix, userID, param.ProductID), err)
+			logger.SERVER.Error("product not found, user_id: %v, product_id: %v", userID, param.ProductID)
+			return fmt.Errorf("product not found")
 		}
-		return tool.PrefixError(fmt.Sprintf("%s: database error, user_id: %v, param_id: %v", errPreFix, userID, param.ProductID), err)
+		logger.SERVER.Error("database error, user_id: %v, product_id: %v, err: %v", userID, param.ProductID, err)
+		return fmt.Errorf("database error")
 	}
 
-	if err := s.DB.Model(&queryProduct).Association("Likes").Append(&queryMember); err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: append error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+	if err := s.DB.Model(&queryMember).Association("Likes").Append(&queryProduct); err != nil {
+		logger.SERVER.Error("failed to like product, user_id: %v, product_id: %v, err: %v", userID, queryProduct.ID, err)
+		return fmt.Errorf("failed to like product")
 	}
 
-	logger.SERVER.Info("succeed to like product, user_id: %v, product_id: %v\n", userID, queryProduct.ID)
+	logger.SERVER.Info("succeed in like product, user_id: %v, product_id: %v\n", userID, queryProduct.ID)
 	return nil
 }
 
-func (s *ProdocutService) Delete(userID uint, param productTypes.DeleteParam) error {
-	var errPreFix string = "failed to delete product"
+func (s *ProductService) Delete(userID uint, param ...productTypes.DeleteParam) ([]uint, error) {
+	var idList []uint
 
-	// check step
 	if err := s.CheckDB(); err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: database connection error, user_id: %v", errPreFix, userID), err)
+		logger.SERVER.Error("database connection error, err: %v", err)
+		return idList, fmt.Errorf("database connection error")
 	}
 
+	if idList, err := s.delete(userID, param...); err != nil {
+		return idList, err
+	}
+	return idList, nil
+}
+
+func (s *ProductService) delete(userID uint, params ...productTypes.DeleteParam) ([]uint, error) {
+	var idList []uint
+	var anyError bool
+
+	for _, param := range params {
+		id, err := s.deleteOne(userID, param)
+		if err != nil {
+			anyError = true
+			continue
+		}
+		idList = append(idList, id)
+	}
+
+	if anyError {
+		return idList, fmt.Errorf("some product failed to delete")
+	}
+
+	logger.SERVER.Info("succeed in delete products, user_id: %v, product_id_list: %v", userID, idList)
+	return idList, nil
+}
+
+func (s *ProductService) deleteOne(userID uint, param productTypes.DeleteParam) (uint, error) {
 	if err := param.Check(); err != nil {
-		return tool.PrefixError(fmt.Sprintf("%s: parameter error, user_id: %v", errPreFix, userID), err)
+		logger.SERVER.Error("invalid parameter, user_id: %d, param: %+v, err: %v", userID, param, err)
+		return 0, fmt.Errorf("invalid parameter")
 	}
 
 	if err := s.DB.Transaction(func(tx *gorm.DB) error {
 		var queryProduct mysqlModel.Product
-		if err := s.DB.First(&queryProduct, param.ID).Error; err != nil {
+		if err := s.DB.First(&queryProduct, param.ProductID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return tool.PrefixError(fmt.Sprintf("%s: product not found, user_id: %v, param_id: %v", errPreFix, userID, param.ID), err)
+				logger.SERVER.Error("product not found, user_id: %v, product_id: %v", userID, param.ProductID)
+				return fmt.Errorf("product not found")
 			}
-			return tool.PrefixError(fmt.Sprintf("%s: database error, user_id: %v, param_id: %v", errPreFix, userID, param.ID), err)
+			logger.SERVER.Error("database error, user_id: %v, product_id: %v, err: %v", userID, param.ProductID, err)
+			return fmt.Errorf("database error")
 		}
 
-		if err := s.DB.Model(&queryProduct).Association("Likes").Clear(); err != nil {
-			return tool.PrefixError(fmt.Sprintf("%s: clear error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+		if err := s.DB.Model(&queryProduct).Association("LikedBy").Clear(); err != nil {
+			logger.SERVER.Error("failed to clear likes, user_id: %v, product_id: %v, err: %v", userID, queryProduct.ID, err)
+			return fmt.Errorf("failed to clear likes")
 		}
 
 		if err := s.DB.Delete(&queryProduct).Error; err != nil {
-			return tool.PrefixError(fmt.Sprintf("%s: delete error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+			logger.SERVER.Error("failed to delete product, user_id: %v, product_id: %v, err: %v", userID, queryProduct.ID, err)
+			return fmt.Errorf("failed to delete product")
 		}
 
 		if err := s.DB.Unscoped().Delete(&queryProduct).Error; err != nil {
-			return tool.PrefixError(fmt.Sprintf("%s: unscoped delete error, user_id: %v, product_id: %v", errPreFix, userID, queryProduct.ID), err)
+			logger.SERVER.Error("failed to delete unscoped product, user_id: %v, product_id: %v, err: %v", userID, queryProduct.ID, err)
+			return fmt.Errorf("failed to delete unscoped product")
 		}
 
 		return nil
 	}); err != nil {
-		return tool.PrefixError(errPreFix, err)
+		return 0, err
 	}
 
-	fmt.Printf("member %d deletes product %d successfully!\n", userID, param.ID)
-	return nil
+	logger.SERVER.Info("succeed in deleting product, user_id: %v, product_id: %v\n", userID, param.ProductID)
+	return param.ProductID, nil
 }
 
-func (s *ProdocutService) Detail(param productTypes.DetailParam) (*productTypes.Product, error) {
-	var errPreFix string = "failed to get product detail"
-
-	// check step
-	err := s.CheckDB()
-	if err != nil {
-		return nil, tool.PrefixError(errPreFix, err)
-	}
-	if err = param.Check(); err != nil {
-		return nil, tool.PrefixError(errPreFix, err)
+func (s *ProductService) Detail(param productTypes.DetailParam) (*productTypes.Product, error) {
+	if err := s.CheckDB(); err != nil {
+		logger.SERVER.Error("database connection error, err: %v", err)
+		return nil, fmt.Errorf("database connection error")
 	}
 
-	var model mysqlModel.Product
-	model.ID = param.ID
-
-	pd, err := s.queryProductByModel(model)
+	product, err := s.detail(param)
 	if err != nil {
-		return nil, tool.PrefixError(errPreFix, err)
+		return product, err
+	}
+
+	return product, nil
+}
+
+func (s *ProductService) detail(param productTypes.DetailParam) (*productTypes.Product, error) {
+	if err := param.Check(); err != nil {
+		logger.SERVER.Error("invalid parameter, param: %+v, err: %v", param, err)
+		return nil, fmt.Errorf("invalid parameter")
+	}
+
+	var queryProduct mysqlModel.Product
+	if err := s.DB.First(&queryProduct, param.ProductID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.SERVER.Error("product not found, product_id: %v", param.ProductID)
+			return nil, fmt.Errorf("product not found")
+		}
+		logger.SERVER.Error("database error, product_id: %v, err: %v", param.ProductID, err)
+		return nil, fmt.Errorf("database error")
+	}
+
+	pd := &productTypes.Product{
+		ID:           queryProduct.ID,
+		Name:         queryProduct.Name,
+		Title:        queryProduct.Title,
+		Desc:         queryProduct.Desc,
+		Category:     queryProduct.Category,
+		Brand:        queryProduct.Brand,
+		Manufacturer: queryProduct.Manufacturer,
+		Status:       queryProduct.Status,
+		Like:         uint(len(queryProduct.LikedBy)),
+		UpdatedAt:    queryProduct.UpdatedAt,
+		CreatedAt:    queryProduct.CreatedAt,
 	}
 
 	return pd, nil
 }
 
-// batches
-func (s *ProdocutService) CreateInBatches(userID uint, params []productTypes.CreateParam) error {
-	var errPreFix string = "failed to create product"
-
-	// check step
-	if err := s.CheckDB(); err != nil {
-		return tool.PrefixError(errPreFix, err)
+func (s *ProductService) Query(qp productTypes.QueryParam, op productTypes.OrderParam) ([]productTypes.Product, error) {
+	if err := qp.Check(); err != nil {
+		logger.SERVER.Error("invalid query parameter, param: %+v, err: %v", qp, err)
+		return nil, fmt.Errorf("invalid parameter")
 	}
 
-	for _, param := range params {
-		if err := param.Check(); err != nil {
-			return tool.PrefixError(errPreFix, err)
-		}
-	}
-	models := []mysqlModel.Product{}
-	for _, param := range params {
-		model := mysqlModel.ToProductModel(param)
-		models = append(models, model)
+	var queryProducts []mysqlModel.Product
+
+	query := s.DB.Offset(qp.Offset()).Limit(qp.Limit())
+	query = applyQueryFilters(query, qp)
+
+	if err := query.Find(&queryProducts).Error; err != nil {
+		logger.SERVER.Error("database error, err: %v", err)
+		return nil, fmt.Errorf("database error")
 	}
 
-	if err := s.DB.CreateInBatches(models, len(models)).Error; err != nil {
-		return tool.PrefixError(errPreFix, err)
+	var products []productTypes.Product
+
+	for _, p := range queryProducts {
+		products = append(products, productTypes.Product{
+			ID:           p.ID,
+			Name:         p.Name,
+			Title:        p.Title,
+			Desc:         p.Desc,
+			Category:     p.Category,
+			Brand:        p.Brand,
+			Manufacturer: p.Manufacturer,
+			Status:       p.Status,
+			Like:         uint(len(p.LikedBy)),
+			UpdatedAt:    p.UpdatedAt,
+			CreatedAt:    p.CreatedAt,
+		})
 	}
 
-	return nil
+	return products, nil
 }
 
-func (s *ProdocutService) DeleteInBatches(userID uint, param productTypes.DeleteBatchesParam) error {
-	var errPreFix string = "failed to delete products"
-
-	// check step
-	err := s.CheckDB()
-	if err != nil {
-		return tool.PrefixError(errPreFix, err)
+func applyQueryFilters(db *gorm.DB, qp productTypes.QueryParam) *gorm.DB {
+	if qp.Name != "" {
+		db = db.Where("name = ?", qp.Name)
 	}
-	if err = param.Check(); err != nil {
-		return tool.PrefixError(errPreFix, err)
+	if qp.Title != "" {
+		db = db.Where("title = ?", qp.Title)
 	}
-
-	successIDList := []string{}
-
-	var errSum error
-	for _, ID := range param.IDList {
-		errPreFix = fmt.Sprintf("failed to delete product %d", ID)
-
-		var queryModel mysqlModel.Product
-		queryModel.SetID(ID)
-		var matchModel mysqlModel.Product
-
-		if err := s.DB.Where(queryModel).Take(&matchModel).Error; err != nil {
-			errSum = tool.MergeErrors(errSum, tool.PrefixError(errPreFix, err))
-			continue
-		}
-
-		var deleteModel mysqlModel.Product
-		deleteModel.SetID(matchModel.ID)
-		if err := s.DB.Delete(&deleteModel).Error; err != nil {
-			errSum = tool.MergeErrors(errSum, tool.PrefixError(errPreFix, err))
-			continue
-		}
-
-		if err := s.DB.Unscoped().Delete(&deleteModel).Error; err != nil {
-			errSum = tool.MergeErrors(errSum, tool.PrefixError(errPreFix, err))
-			continue
-		}
-
-		successIDList = append(successIDList, strconv.FormatUint(uint64(ID), 10))
+	if qp.Desc != "" {
+		db = db.Where("desc = ?", qp.Desc)
 	}
-	fmt.Printf("member %d deletes product (%s) successfully!\n", userID, strings.Join(successIDList, ","))
-	return errSum
-}
-
-func (s *ProdocutService) Query() ([]productTypes.Product, error) {
-	var errPreFix string = "failed to query product"
-
-	// check step
-	err := s.CheckDB()
-	if err != nil {
-		return nil, tool.PrefixError(errPreFix, err)
+	if qp.Brand != "" {
+		db = db.Where("brand = ?", qp.Brand)
 	}
-	return nil, nil
-}
-
-func (s *ProdocutService) queryProductByModel(model mysqlModel.Product) (*productTypes.Product, error) {
-	if err := s.DB.Where(model).Take(&model).Error; err != nil {
-		return nil, err
-	}
-	return ModelToProduct(model), nil
-}
-
-func ModelToProduct(m mysqlModel.Product) *productTypes.Product {
-	product := productTypes.ToProduct(m)
-	return &product
+	return db
 }

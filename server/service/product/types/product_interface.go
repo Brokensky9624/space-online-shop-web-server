@@ -1,12 +1,10 @@
 package types
 
 type IProductSrv interface {
-	Create(userID uint, param CreateParam) error
-	CreateInBatches(userID uint, params []CreateParam) error
+	Create(userID uint, params ...CreateParam) ([]uint, error)
 	Edit(userID uint, param EditParam) error
 	Like(userID uint, param LikeParam) error
-	Delete(userID uint, param DeleteParam) error
-	DeleteInBatches(userID uint, param DeleteBatchesParam) error
+	Delete(userID uint, param ...DeleteParam) ([]uint, error)
 	Detail(param DetailParam) (*Product, error)
-	Query() ([]Product, error)
+	Query(qp QueryParam, op OrderParam) ([]Product, error)
 }

@@ -1,10 +1,7 @@
 package model
 
 import (
-	"reflect"
-
 	"gorm.io/gorm"
-	"space.online.shop.web.server/shared/utils/tool"
 )
 
 type Product struct {
@@ -26,13 +23,4 @@ func (Product) TableName() string {
 func (p *Product) SetID(productID uint) *Product {
 	p.ID = productID
 	return p
-}
-
-func ToProductModel(input interface{}) Product {
-	model := Product{}
-	iValue := reflect.ValueOf(input)
-	if iValue.Kind() == reflect.Struct {
-		tool.CopyFields(&model, iValue)
-	}
-	return model
 }

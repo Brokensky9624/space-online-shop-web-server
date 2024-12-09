@@ -38,37 +38,38 @@ func (r *ProductREST) RegisterRoute() *ProductREST {
 	productsGroup := r.apiRouterGroup.Group("/products")
 	{
 		// batches
-		productsGroup.POST("/create", r.CreateInBatches)
-		productsGroup.DELETE("/delete", r.DeleteInBatches)
 		productsGroup.GET("/query", r.Query)
 	}
 	return r
 }
 
 func (r *ProductREST) Create(c *gin.Context) {
-	var param productTypes.CreateParam
-	if err := c.ShouldBindJSON(&param); err != nil {
+	var params []productTypes.CreateParam
+	if err := c.ShouldBindJSON(&params); err != nil {
 		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
 		return
 	}
+
 	// get user
 	user, exists := c.Get("id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, response.FailRespObj(errors.New("Unauthorized")))
 		return
 	}
+
 	member, ok := user.(*memberTypes.Member)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, response.FailRespObj(errors.New("internal Server Error")))
 		return
 	}
+
 	srv := r.srvMngr.ProductSrv
-	if err := srv.Create(member.ID, param); err != nil {
+	idList, err := srv.Create(member.ID, params...)
+	if err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	message := "create product successful !"
-	c.JSON(http.StatusOK, response.SuccessRespObj(message, param.Name))
+	c.JSON(http.StatusOK, response.SuccessRespObj(fmt.Sprintf("succeed in creating products, id list: %#v", idList), nil))
 }
 
 func (r *ProductREST) Edit(c *gin.Context) {
@@ -79,6 +80,7 @@ func (r *ProductREST) Edit(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
 		return
 	}
+
 	var param productTypes.EditParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
@@ -86,12 +88,12 @@ func (r *ProductREST) Edit(c *gin.Context) {
 	}
 	param.ID = id
 
-	// get user
 	user, exists := c.Get("id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, response.FailRespObj(errors.New("Unauthorized")))
 		return
 	}
+
 	member, ok := user.(*memberTypes.Member)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, response.FailRespObj(errors.New("internal Server Error")))
@@ -103,6 +105,7 @@ func (r *ProductREST) Edit(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
+
 	msg := fmt.Sprintf("edit product %d succesfully!", id)
 	c.JSON(http.StatusOK, response.SuccessRespObj(msg, nil))
 }
@@ -143,15 +146,21 @@ func (r *ProductREST) Like(c *gin.Context) {
 }
 
 func (r *ProductREST) Delete(c *gin.Context) {
-	idStr := c.Param("id")
-	idUINT64, err := strconv.ParseUint(idStr, 10, 64)
-	id := uint(idUINT64)
-	if err != nil {
+	// idStr := c.Param("id")
+	// idUINT64, err := strconv.ParseUint(idStr, 10, 64)
+	// id := uint(idUINT64)
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, response.FailRespObj(err))
+	// 	return
+	// }
+	// param := productTypes.DeleteParam{
+	// 	ProductID: id,
+	// }
+
+	var params []productTypes.DeleteParam
+	if err := c.ShouldBindJSON(&params); err != nil {
 		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
 		return
-	}
-	param := productTypes.DeleteParam{
-		ID: id,
 	}
 
 	// get user
@@ -165,13 +174,14 @@ func (r *ProductREST) Delete(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, response.FailRespObj(errors.New("internal Server Error")))
 		return
 	}
+
 	srv := r.srvMngr.ProductSrv
-	if err := srv.Delete(member.ID, param); err != nil {
+	idList, err := srv.Delete(member.ID, params...)
+	if err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	msg := fmt.Sprintf("delete product %d succesfully!", id)
-	c.JSON(http.StatusOK, response.SuccessRespObj(msg, nil))
+	c.JSON(http.StatusOK, response.SuccessRespObj(fmt.Sprintf("succeed in deleting products, id list: %#v", idList), nil))
 }
 
 func (r *ProductREST) GetDetail(c *gin.Context) {
@@ -183,7 +193,7 @@ func (r *ProductREST) GetDetail(c *gin.Context) {
 		return
 	}
 	param := productTypes.DetailParam{
-		ID: id,
+		ProductID: id,
 	}
 	srv := r.srvMngr.ProductSrv
 	product, err := srv.Detail(param)
@@ -195,66 +205,47 @@ func (r *ProductREST) GetDetail(c *gin.Context) {
 	c.JSON(http.StatusOK, response.SuccessRespObj(msg, product))
 }
 
-func (r *ProductREST) CreateInBatches(c *gin.Context) {
-	var params []productTypes.CreateParam
-	if err := c.ShouldBindJSON(&params); err != nil {
-		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
-		return
-	}
-	// get user
-	user, exists := c.Get("id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, response.FailRespObj(errors.New("Unauthorized")))
-		return
-	}
-	member, ok := user.(*memberTypes.Member)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, response.FailRespObj(errors.New("internal Server Error")))
-		return
-	}
-	srv := r.srvMngr.ProductSrv
-	if err := srv.CreateInBatches(member.ID, params); err != nil {
-		c.JSON(http.StatusOK, response.FailRespObj(err))
-		return
-	}
-	dataList := []interface{}{}
-	for _, param := range params {
-		dataList = append(dataList, param.Name)
-	}
-	message := "create product successful !"
-	c.JSON(http.StatusOK, response.SuccessRespObj(message, dataList...))
-}
-
-func (r *ProductREST) DeleteInBatches(c *gin.Context) {
-
-	var param productTypes.DeleteBatchesParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
-		return
-	}
-
-	// get user
-	user, exists := c.Get("id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, response.FailRespObj(errors.New("Unauthorized")))
-		return
-	}
-	member, ok := user.(*memberTypes.Member)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, response.FailRespObj(errors.New("internal Server Error")))
-		return
-	}
-	srv := r.srvMngr.ProductSrv
-	if err := srv.DeleteInBatches(member.ID, param); err != nil {
-		c.JSON(http.StatusOK, response.FailRespObj(err))
-		return
-	}
-	msg := "delete products succesfully!"
-	c.JSON(http.StatusOK, response.SuccessRespObj(msg, nil))
-}
-
 func (r *ProductREST) Query(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "1")
+	page, err := strconv.ParseInt(pageStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
+		return
+	}
+
+	pageSizeStr := c.DefaultQuery("page_size", "20")
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
+		return
+	}
+
+	search := c.DefaultQuery("search", "")
+
+	qp := productTypes.QueryParam{
+		Title:    search,
+		Name:     search,
+		Desc:     search,
+		Brand:    search,
+		Page:     int(page),
+		PageSize: int(pageSize),
+	}
+
+	isNameOrderAsc := c.DefaultQuery("name_order", "asc") == "asc"
+	isUpdatedAtOrderAsc := c.DefaultQuery("updated_at_order", "asc") == "asc"
+
+	op := productTypes.OrderParam{
+		NameAsc:      isNameOrderAsc,
+		UpdatedAtAsc: isUpdatedAtOrderAsc,
+	}
+
+	srv := r.srvMngr.ProductSrv
+	products, err := srv.Query(qp, op)
+	if err != nil {
+		c.JSON(http.StatusOK, response.FailRespObj(err))
+		return
+	}
 
 	msg := "query products succesfully!"
-	c.JSON(http.StatusOK, response.SuccessRespObj(msg, nil))
+	c.JSON(http.StatusOK, response.SuccessRespObj(msg, products))
 }

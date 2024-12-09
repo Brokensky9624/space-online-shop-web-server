@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"reflect"
 	"slices"
 	"time"
 
@@ -40,15 +39,6 @@ type Product struct {
 	CreatedAt    time.Time `json:"createAt"`
 }
 
-func ToProduct(input interface{}) Product {
-	p := Product{}
-	iVal := reflect.ValueOf(input)
-	if iVal.Kind() == reflect.Struct {
-		tool.CopyFields(&p, iVal)
-	}
-	return p
-}
-
 type CreateParam struct {
 	Name         string `json:"name" required:"true"`
 	Title        string `json:"title" required:"true"`
@@ -76,13 +66,13 @@ func (param CreateParam) Check() error {
 		return err
 	}
 	if !slices.Contains(SupportedCategories, param.Category) {
-		return fmt.Errorf("category %s not support", param.Category)
+		return fmt.Errorf("category: `%s` not support", param.Category)
 	}
 	return nil
 }
 
 type DetailParam struct {
-	ID uint `json:"id" required:"true"`
+	ProductID uint `json:"productId" required:"true"`
 }
 
 func (param DetailParam) Check() error {
@@ -123,32 +113,79 @@ func (param LikeParam) Check() error {
 }
 
 type DeleteParam struct {
-	ID uint `json:"id" required:"true"`
+	ProductID uint `json:"productId" required:"true"`
 }
 
 func (param DeleteParam) Check() error {
 	return tool.CheckRequiredFields(param)
 }
 
-type DeleteBatchesParam struct {
-	IDList []uint `json:"idList" required:"true"`
-}
-
-func (param DeleteBatchesParam) Check() error {
-	return tool.CheckRequiredFields(param)
-}
-
 type QueryParam struct {
-	Title        string    `json:"title"`
-	Name         string    `json:"name"`
-	Category     string    `json:"category"`
-	Brand        string    `json:"brand"`
-	Manufacturer string    `json:"manufacturer"`
-	Status       uint      `json:"status"`
-	Like         uint      `json:"like"`
-	UpdatedAt    time.Time `json:"updateAt"`
+	Title    string `json:"title" required:"true"`
+	Name     string `json:"name" required:"true"`
+	Desc     string `json:"desc" required:"true"`
+	Brand    string `json:"brand" required:"true"`
+	Page     int    `json:"page" required:"true"`
+	PageSize int    `json:"pageSize" required:"true"`
+}
+
+func (param QueryParam) Offset() int {
+	if param.Page < 1 || param.PageSize < 1 {
+		return 0
+	}
+	return (param.Page - 1) * param.PageSize
+}
+
+func (param QueryParam) Limit() int {
+	if param.Page < 1 || param.PageSize < 1 {
+		return 0
+	}
+	return param.PageSize
 }
 
 func (param QueryParam) Check() error {
 	return tool.CheckRequiredFields(param)
 }
+
+type OrderParam struct {
+	NameAsc      bool
+	UpdatedAtAsc bool
+}
+
+// type orderParamOption interface {
+// 	apply(*OrderParam)
+// }
+
+// type orderParamOptionFunc func(*OrderParam)
+
+// func (fn orderParamOptionFunc) apply(param *OrderParam) {
+// 	fn(param)
+// }
+
+// func newDefaultOrderParam() *OrderParam {
+// 	return &OrderParam{
+// 		NameAsc: true,
+// 	}
+// }
+
+// func NewOrderParam(opts ...orderParamOption) *OrderParam {
+// 	param := newDefaultOrderParam()
+
+// 	for _, opt := range opts {
+// 		opt.apply(param)
+// 	}
+
+// 	return param
+// }
+
+// func WithOrderNameAsc(isAsc bool) orderParamOption {
+// 	return orderParamOptionFunc(func(param *OrderParam) {
+// 		param.NameAsc = isAsc
+// 	})
+// }
+
+// func WithOrderUpdatedAtAsc(isAsc bool) orderParamOption {
+// 	return orderParamOptionFunc(func(param *OrderParam) {
+// 		param.UpdatedAtAsc = isAsc
+// 	})
+// }

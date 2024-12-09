@@ -15,7 +15,7 @@ func CheckRequiredFields(param interface{}) error {
 		jsonTag := field.Tag.Get("json")
 		requiredTag := field.Tag.Get("required")
 		if requiredTag == "true" && value == "" {
-			return fmt.Errorf("%s is required but empty", jsonTag)
+			return fmt.Errorf("tag: `%s` is required but empty", jsonTag)
 		}
 	}
 	return nil
