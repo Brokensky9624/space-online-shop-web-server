@@ -2,7 +2,32 @@ package model
 
 import (
 	"gorm.io/gorm"
+	"space.online.shop.web.server/service/db"
 )
+
+var productColumns map[string]struct{}
+
+func FetchProductColumns() {
+	db := db.Service()
+	productColumns = make(map[string]struct{})
+	stmt := gorm.Statement{DB: db.DB}
+	if err := stmt.Parse(&Product{}); err != nil {
+		panic(err)
+	}
+
+	for _, field := range stmt.Schema.Fields {
+		if field.DBName != "" {
+			productColumns[field.DBName] = struct{}{}
+		}
+	}
+}
+
+func ProductColumns() map[string]struct{} {
+	if productColumns == nil {
+		FetchProductColumns()
+	}
+	return productColumns
+}
 
 type Product struct {
 	gorm.Model

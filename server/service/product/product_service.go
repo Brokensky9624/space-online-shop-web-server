@@ -289,7 +289,7 @@ func (s *ProductService) detail(param productTypes.DetailParam) (*productTypes.P
 	return pd, nil
 }
 
-func (s *ProductService) Query(qp productTypes.QueryParam, op productTypes.OrderParam) ([]productTypes.Product, error) {
+func (s *ProductService) Query(qp productTypes.QueryParam, ascColumns ...string) ([]productTypes.Product, error) {
 	if err := qp.Check(); err != nil {
 		logger.SERVER.Error("invalid query parameter, param: %+v, err: %v", qp, err)
 		return nil, fmt.Errorf("invalid parameter")
@@ -299,6 +299,17 @@ func (s *ProductService) Query(qp productTypes.QueryParam, op productTypes.Order
 
 	query := s.DB.Offset(qp.Offset()).Limit(qp.Limit())
 	query = applyQueryFilters(query, qp)
+
+	productColumns := mysqlModel.ProductColumns()
+
+	query = applyOrders(query, func(ascColumns ...string) bool {
+		for _, column := range ascColumns {
+			if _, ok := productColumns[column]; ok {
+				return true
+			}
+		}
+		return false
+	}, ascColumns...)
 
 	if err := query.Find(&queryProducts).Error; err != nil {
 		logger.SERVER.Error("database error, err: %v", err)
@@ -339,5 +350,16 @@ func applyQueryFilters(db *gorm.DB, qp productTypes.QueryParam) *gorm.DB {
 	if qp.Brand != "" {
 		db = db.Where("brand = ?", qp.Brand)
 	}
+	return db
+}
+
+func applyOrders(db *gorm.DB, filterAscColumns func(ascColumns ...string) bool, ascColumns ...string) *gorm.DB {
+	for _, column := range ascColumns {
+		if filterAscColumns(column) {
+			fmt.Printf("column: %s is asc\n", column)
+			db = db.Order(fmt.Sprintf("%s asc", column))
+		}
+	}
+
 	return db
 }

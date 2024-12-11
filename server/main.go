@@ -48,6 +48,9 @@ func main() {
 		&model.MemberProductLikes{},
 	))
 	stoppers = append(stoppers, dbSrv)
+
+	model.FetchProductColumns()
+
 	go dbSrv.Run()
 
 	// setup services to service manager

@@ -121,10 +121,10 @@ func (param DeleteParam) Check() error {
 }
 
 type QueryParam struct {
-	Title    string `json:"title" required:"true"`
-	Name     string `json:"name" required:"true"`
-	Desc     string `json:"desc" required:"true"`
-	Brand    string `json:"brand" required:"true"`
+	Title    string `json:"title"`
+	Name     string `json:"name"`
+	Desc     string `json:"desc"`
+	Brand    string `json:"brand"`
 	Page     int    `json:"page" required:"true"`
 	PageSize int    `json:"pageSize" required:"true"`
 }
@@ -147,10 +147,10 @@ func (param QueryParam) Check() error {
 	return tool.CheckRequiredFields(param)
 }
 
-type OrderParam struct {
-	NameAsc      bool
-	UpdatedAtAsc bool
-}
+// type OrderParam struct {
+// 	NameAsc      bool
+// 	UpdatedAtAsc bool
+// }
 
 // type orderParamOption interface {
 // 	apply(*OrderParam)

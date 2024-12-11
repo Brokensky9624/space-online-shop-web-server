@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"space.online.shop.web.server/rest/response"
@@ -231,16 +233,18 @@ func (r *ProductREST) Query(c *gin.Context) {
 		PageSize: int(pageSize),
 	}
 
-	isNameOrderAsc := c.DefaultQuery("name_order", "asc") == "asc"
-	isUpdatedAtOrderAsc := c.DefaultQuery("updated_at_order", "asc") == "asc"
-
-	op := productTypes.OrderParam{
-		NameAsc:      isNameOrderAsc,
-		UpdatedAtAsc: isUpdatedAtOrderAsc,
+	queryMap := c.Request.URL.Query()
+	toOrderColumns := []string{}
+	for k, v := range queryMap {
+		if strings.HasSuffix(k, "_sort_order") {
+			if slices.Contains(v, "asc") {
+				toOrderColumns = append(toOrderColumns, strings.TrimSuffix(k, "_sort_order"))
+			}
+		}
 	}
 
 	srv := r.srvMngr.ProductSrv
-	products, err := srv.Query(qp, op)
+	products, err := srv.Query(qp, toOrderColumns...)
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
