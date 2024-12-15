@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -35,7 +34,7 @@ func (r *ProductREST) RegisterRoute() *ProductREST {
 		productGroup.PUT("/:id/edit", r.Edit)
 		productGroup.PUT("/:id/like", r.Like)
 		productGroup.GET("/:id", r.GetDetail)
-		productGroup.DELETE("/:id/delete", r.Delete)
+		productGroup.DELETE("/delete", r.Delete)
 	}
 	productsGroup := r.apiRouterGroup.Group("/products")
 	{
@@ -108,7 +107,7 @@ func (r *ProductREST) Edit(c *gin.Context) {
 		return
 	}
 
-	msg := fmt.Sprintf("edit product %d succesfully!", id)
+	msg := fmt.Sprintf("edit product %d successfully!", id)
 	c.JSON(http.StatusOK, response.SuccessRespObj(msg, nil))
 }
 
@@ -143,7 +142,7 @@ func (r *ProductREST) Like(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	msg := fmt.Sprintf("like product %d succesfully!", id)
+	msg := fmt.Sprintf("like product %d successfully!", id)
 	c.JSON(http.StatusOK, response.SuccessRespObj(msg, nil))
 }
 
@@ -183,7 +182,7 @@ func (r *ProductREST) Delete(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	c.JSON(http.StatusOK, response.SuccessRespObj(fmt.Sprintf("succeed in deleting products, id list: %#v", idList), nil))
+	c.JSON(http.StatusOK, response.SuccessRespObj("succeed in deleting products", idList))
 }
 
 func (r *ProductREST) GetDetail(c *gin.Context) {
@@ -203,7 +202,7 @@ func (r *ProductREST) GetDetail(c *gin.Context) {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	msg := fmt.Sprintf("get product %d detail succesfully!", id)
+	msg := fmt.Sprintf("get product %d detail successfully!", id)
 	c.JSON(http.StatusOK, response.SuccessRespObj(msg, product))
 }
 
@@ -225,31 +224,36 @@ func (r *ProductREST) Query(c *gin.Context) {
 	search := c.DefaultQuery("search", "")
 
 	qp := productTypes.QueryParam{
-		Title:    search,
-		Name:     search,
-		Desc:     search,
-		Brand:    search,
-		Page:     int(page),
-		PageSize: int(pageSize),
+		Title:       search,
+		Name:        search,
+		Description: search,
+		Brand:       search,
+		Page:        int(page),
+		PageSize:    int(pageSize),
 	}
 
 	queryMap := c.Request.URL.Query()
-	toOrderColumns := []string{}
+	columnOrderMap := make(map[string]string)
 	for k, v := range queryMap {
 		if strings.HasSuffix(k, "_sort_order") {
-			if slices.Contains(v, "asc") {
-				toOrderColumns = append(toOrderColumns, strings.TrimSuffix(k, "_sort_order"))
+			column := strings.TrimSuffix(k, "_sort_order")
+			if column == "" {
+				continue
 			}
+			if len(v) == 0 {
+				continue
+			}
+			columnOrderMap[column] = v[0]
 		}
 	}
 
 	srv := r.srvMngr.ProductSrv
-	products, err := srv.Query(qp, toOrderColumns...)
+	products, err := srv.Query(qp, columnOrderMap)
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
 
-	msg := "query products succesfully!"
+	msg := "query products successfully!"
 	c.JSON(http.StatusOK, response.SuccessRespObj(msg, products))
 }

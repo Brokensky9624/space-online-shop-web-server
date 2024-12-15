@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"space.online.shop.web.server/service/base"
 	"space.online.shop.web.server/service/db"
+	"space.online.shop.web.server/service/db/interfaces"
 	mysqlModel "space.online.shop.web.server/service/db/model"
 	productTypes "space.online.shop.web.server/service/product/types"
 
@@ -276,7 +277,7 @@ func (s *ProductService) detail(param productTypes.DetailParam) (*productTypes.P
 		ID:           queryProduct.ID,
 		Name:         queryProduct.Name,
 		Title:        queryProduct.Title,
-		Desc:         queryProduct.Desc,
+		Description:  queryProduct.Description,
 		Category:     queryProduct.Category,
 		Brand:        queryProduct.Brand,
 		Manufacturer: queryProduct.Manufacturer,
@@ -289,7 +290,7 @@ func (s *ProductService) detail(param productTypes.DetailParam) (*productTypes.P
 	return pd, nil
 }
 
-func (s *ProductService) Query(qp productTypes.QueryParam, ascColumns ...string) ([]productTypes.Product, error) {
+func (s *ProductService) Query(qp productTypes.QueryParam, columnOrderMap map[string]string) ([]productTypes.Product, error) {
 	if err := qp.Check(); err != nil {
 		logger.SERVER.Error("invalid query parameter, param: %+v, err: %v", qp, err)
 		return nil, fmt.Errorf("invalid parameter")
@@ -297,19 +298,8 @@ func (s *ProductService) Query(qp productTypes.QueryParam, ascColumns ...string)
 
 	var queryProducts []mysqlModel.Product
 
-	query := s.DB.Offset(qp.Offset()).Limit(qp.Limit())
-	query = applyQueryFilters(query, qp)
-
-	productColumns := mysqlModel.ProductColumns()
-
-	query = applyOrders(query, func(ascColumns ...string) bool {
-		for _, column := range ascColumns {
-			if _, ok := productColumns[column]; ok {
-				return true
-			}
-		}
-		return false
-	}, ascColumns...)
+	query := applyQueryFilters(s.DB.DB, qp)
+	query = applyOrderFilters(query, columnOrderMap)
 
 	if err := query.Find(&queryProducts).Error; err != nil {
 		logger.SERVER.Error("database error, err: %v", err)
@@ -323,7 +313,7 @@ func (s *ProductService) Query(qp productTypes.QueryParam, ascColumns ...string)
 			ID:           p.ID,
 			Name:         p.Name,
 			Title:        p.Title,
-			Desc:         p.Desc,
+			Description:  p.Description,
 			Category:     p.Category,
 			Brand:        p.Brand,
 			Manufacturer: p.Manufacturer,
@@ -338,28 +328,44 @@ func (s *ProductService) Query(qp productTypes.QueryParam, ascColumns ...string)
 }
 
 func applyQueryFilters(db *gorm.DB, qp productTypes.QueryParam) *gorm.DB {
+	query := db.Offset(qp.Offset()).Limit(qp.Limit())
+
+	genSearchPattern := func(search string) string {
+		return fmt.Sprintf("%%%s%%", search)
+	}
+
 	if qp.Name != "" {
-		db = db.Where("name = ?", qp.Name)
+		query = query.Where("name LIKE ?", genSearchPattern(qp.Name))
 	}
 	if qp.Title != "" {
-		db = db.Where("title = ?", qp.Title)
+		query = query.Where("title LIKE ?", genSearchPattern(qp.Title))
 	}
-	if qp.Desc != "" {
-		db = db.Where("desc = ?", qp.Desc)
+	if qp.Description != "" {
+		query = query.Where("description LIKE ?", genSearchPattern(qp.Description))
 	}
 	if qp.Brand != "" {
-		db = db.Where("brand = ?", qp.Brand)
+		query = query.Where("brand LIKE ?", genSearchPattern(qp.Brand))
 	}
-	return db
+	return query
 }
 
-func applyOrders(db *gorm.DB, filterAscColumns func(ascColumns ...string) bool, ascColumns ...string) *gorm.DB {
-	for _, column := range ascColumns {
-		if filterAscColumns(column) {
-			fmt.Printf("column: %s is asc\n", column)
-			db = db.Order(fmt.Sprintf("%s asc", column))
+func applyOrderFilters(db *gorm.DB, columnOrderMap map[string]string) *gorm.DB {
+	query := db
+	productColumnMap := mysqlModel.ProductColumnMap()
+
+	for column, order := range columnOrderMap {
+		_, ok := productColumnMap[column]
+		if !ok {
+			continue
+		}
+
+		switch order {
+		case string(interfaces.ASC):
+			query = query.Order(fmt.Sprintf("%s %s", column, order))
+		case string(interfaces.DESC):
+			query = query.Order(fmt.Sprintf("%s %s", column, order))
 		}
 	}
 
-	return db
+	return query
 }

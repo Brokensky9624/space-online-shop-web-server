@@ -6,5 +6,5 @@ type IProductSrv interface {
 	Like(userID uint, param LikeParam) error
 	Delete(userID uint, param ...DeleteParam) ([]uint, error)
 	Detail(param DetailParam) (*Product, error)
-	Query(qp QueryParam, ascColumns ...string) ([]Product, error)
+	Query(qp QueryParam, columnOrderMap map[string]string) ([]Product, error)
 }

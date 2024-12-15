@@ -49,8 +49,6 @@ func main() {
 	))
 	stoppers = append(stoppers, dbSrv)
 
-	model.FetchProductColumns()
-
 	go dbSrv.Run()
 
 	// setup services to service manager

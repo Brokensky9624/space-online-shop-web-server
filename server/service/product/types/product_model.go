@@ -15,7 +15,7 @@ const (
 	New ProductStatus = iota
 	Preparing
 	InStock
-	OutofStock
+	OutOfStock
 )
 
 var ( // FIXME: load config
@@ -29,20 +29,20 @@ type Product struct {
 	ID           uint      `json:"id"`
 	Name         string    `json:"name"`
 	Title        string    `json:"title"`
-	Desc         string    `json:"desc"`
+	Description  string    `json:"description"`
 	Category     string    `json:"category"`
 	Brand        string    `json:"brand"`
 	Manufacturer string    `json:"manufacturer"`
 	Status       uint      `json:"status"`
 	Like         uint      `json:"like"`
-	UpdatedAt    time.Time `json:"updateAt"`
-	CreatedAt    time.Time `json:"createAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	CreatedAt    time.Time `json:"createdAt"`
 }
 
 type CreateParam struct {
 	Name         string `json:"name" required:"true"`
 	Title        string `json:"title" required:"true"`
-	Desc         string `json:"desc" required:"true"`
+	Description  string `json:"description" required:"true"`
 	Category     string `json:"category" required:"true"`
 	Brand        string `json:"brand" required:"true"`
 	Manufacturer string `json:"manufacturer" required:"true"`
@@ -53,7 +53,7 @@ func (param CreateParam) ToModel() mysqlModel.Product {
 	return mysqlModel.Product{
 		Name:         param.Name,
 		Title:        param.Title,
-		Desc:         param.Desc,
+		Description:  param.Description,
 		Category:     param.Category,
 		Brand:        param.Brand,
 		Manufacturer: param.Manufacturer,
@@ -83,7 +83,7 @@ type EditParam struct {
 	ID           uint   `json:"id" required:"true"`
 	Name         string `json:"name"`
 	Title        string `json:"title"`
-	Desc         string `json:"desc"`
+	Description  string `json:"description"`
 	Category     string `json:"category"`
 	Brand        string `json:"brand"`
 	Manufacturer string `json:"manufacturer"`
@@ -97,7 +97,7 @@ func (param EditParam) ToModel() mysqlModel.Product {
 	return mysqlModel.Product{
 		Name:         param.Name,
 		Title:        param.Title,
-		Desc:         param.Desc,
+		Description:  param.Description,
 		Category:     param.Category,
 		Brand:        param.Brand,
 		Manufacturer: param.Manufacturer,
@@ -121,12 +121,12 @@ func (param DeleteParam) Check() error {
 }
 
 type QueryParam struct {
-	Title    string `json:"title"`
-	Name     string `json:"name"`
-	Desc     string `json:"desc"`
-	Brand    string `json:"brand"`
-	Page     int    `json:"page" required:"true"`
-	PageSize int    `json:"pageSize" required:"true"`
+	Title       string `json:"title"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Brand       string `json:"brand"`
+	Page        int    `json:"page" required:"true"`
+	PageSize    int    `json:"pageSize" required:"true"`
 }
 
 func (param QueryParam) Offset() int {
@@ -146,46 +146,3 @@ func (param QueryParam) Limit() int {
 func (param QueryParam) Check() error {
 	return tool.CheckRequiredFields(param)
 }
-
-// type OrderParam struct {
-// 	NameAsc      bool
-// 	UpdatedAtAsc bool
-// }
-
-// type orderParamOption interface {
-// 	apply(*OrderParam)
-// }
-
-// type orderParamOptionFunc func(*OrderParam)
-
-// func (fn orderParamOptionFunc) apply(param *OrderParam) {
-// 	fn(param)
-// }
-
-// func newDefaultOrderParam() *OrderParam {
-// 	return &OrderParam{
-// 		NameAsc: true,
-// 	}
-// }
-
-// func NewOrderParam(opts ...orderParamOption) *OrderParam {
-// 	param := newDefaultOrderParam()
-
-// 	for _, opt := range opts {
-// 		opt.apply(param)
-// 	}
-
-// 	return param
-// }
-
-// func WithOrderNameAsc(isAsc bool) orderParamOption {
-// 	return orderParamOptionFunc(func(param *OrderParam) {
-// 		param.NameAsc = isAsc
-// 	})
-// }
-
-// func WithOrderUpdatedAtAsc(isAsc bool) orderParamOption {
-// 	return orderParamOptionFunc(func(param *OrderParam) {
-// 		param.UpdatedAtAsc = isAsc
-// 	})
-// }

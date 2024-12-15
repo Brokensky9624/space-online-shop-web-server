@@ -1,39 +1,46 @@
 package model
 
 import (
+	"sync"
+
 	"gorm.io/gorm"
 	"space.online.shop.web.server/service/db"
 )
 
-var productColumns map[string]struct{}
+var (
+	once             sync.Once
+	productColumnMap map[string]struct{}
+)
 
-func FetchProductColumns() {
-	db := db.Service()
-	productColumns = make(map[string]struct{})
-	stmt := gorm.Statement{DB: db.DB}
-	if err := stmt.Parse(&Product{}); err != nil {
-		panic(err)
-	}
-
-	for _, field := range stmt.Schema.Fields {
-		if field.DBName != "" {
-			productColumns[field.DBName] = struct{}{}
+func FetchProductColumnMap() {
+	once.Do(func() {
+		productColumnMap = make(map[string]struct{})
+		db := db.Service()
+		stmt := gorm.Statement{DB: db.DB}
+		if err := stmt.Parse(&Product{}); err != nil {
+			panic(err)
 		}
-	}
+
+		for _, field := range stmt.Schema.Fields {
+			if field.DBName != "" {
+				productColumnMap[field.DBName] = struct{}{}
+			}
+		}
+	})
 }
 
-func ProductColumns() map[string]struct{} {
-	if productColumns == nil {
-		FetchProductColumns()
+func ProductColumnMap() map[string]struct{} {
+	if productColumnMap == nil {
+		FetchProductColumnMap()
 	}
-	return productColumns
+	return productColumnMap
 }
 
 type Product struct {
 	gorm.Model
 	Name         string   `gorm:"size:50;not null"`
 	Title        string   `gorm:"size:256;not null"`
-	Desc         string   `gorm:"size:1024;not null"`
+	Description  string   `gorm:"size:1024;not null"`
 	Category     string   `gorm:"size:50;not null"`
 	Brand        string   `gorm:"size:100;not null"`
 	Manufacturer string   `gorm:"size:200;not null"`

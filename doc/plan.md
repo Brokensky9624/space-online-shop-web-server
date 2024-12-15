@@ -48,7 +48,7 @@ type Product struct {
     ID uint
     Name string
     Title string
-    Desc string
+    Description string
     Brand string
     Store []StoreProduct `related`
 }

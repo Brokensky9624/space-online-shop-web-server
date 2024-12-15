@@ -24,12 +24,12 @@ path authorize
 - db config in normal file or docker file to env?
 - orm lib? or sql syntax
 - if use orm, auto migrate? or manual migrate? advantages and disadvantages?
-- if Product has id, title, desc, price, color, stock, size, accecption, it need to divide to multiple table?
+- if Product has id, title, description, price, color, stock, size, accept, it need to divide to multiple table?
 - if Member has name, email, birthday, addresses, delivery, shipping, it need to divide to multiple table? 711 table, family table, home table
 - table primary key use auto increase or random?
 - how to design command flow, event loop? or directly execute
-- how to design cache, oo expire time? priortiy? or working pool? every table has cache?
-- column value case insentive
+- how to design cache, oo expire time? priorty? or working pool? every table has cache?
+- column value case insensitive
 
 ### todo
 
