@@ -129,20 +129,6 @@ type QueryParam struct {
 	PageSize    int    `json:"pageSize" required:"true"`
 }
 
-func (param QueryParam) Offset() int {
-	if param.Page < 1 || param.PageSize < 1 {
-		return 0
-	}
-	return (param.Page - 1) * param.PageSize
-}
-
-func (param QueryParam) Limit() int {
-	if param.Page < 1 || param.PageSize < 1 {
-		return 0
-	}
-	return param.PageSize
-}
-
 func (param QueryParam) Check() error {
 	return tool.CheckRequiredFields(param)
 }

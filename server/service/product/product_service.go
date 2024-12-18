@@ -7,10 +7,9 @@ import (
 	"gorm.io/gorm"
 	"space.online.shop.web.server/service/base"
 	"space.online.shop.web.server/service/db"
-	"space.online.shop.web.server/service/db/interfaces"
 	mysqlModel "space.online.shop.web.server/service/db/model"
+	dbTypes "space.online.shop.web.server/service/db/types"
 	productTypes "space.online.shop.web.server/service/product/types"
-
 	"space.online.shop.web.server/shared/utils/logger"
 )
 
@@ -273,33 +272,44 @@ func (s *ProductService) detail(param productTypes.DetailParam) (*productTypes.P
 		return nil, fmt.Errorf("database error")
 	}
 
-	pd := &productTypes.Product{
-		ID:           queryProduct.ID,
-		Name:         queryProduct.Name,
-		Title:        queryProduct.Title,
-		Description:  queryProduct.Description,
-		Category:     queryProduct.Category,
-		Brand:        queryProduct.Brand,
-		Manufacturer: queryProduct.Manufacturer,
-		Status:       queryProduct.Status,
-		Like:         uint(len(queryProduct.LikedBy)),
-		UpdatedAt:    queryProduct.UpdatedAt,
-		CreatedAt:    queryProduct.CreatedAt,
-	}
+	pd := productModelToProduct(queryProduct)
 
-	return pd, nil
+	return &pd, nil
 }
 
-func (s *ProductService) Query(qp productTypes.QueryParam, columnOrderMap map[string]string) ([]productTypes.Product, error) {
-	if err := qp.Check(); err != nil {
-		logger.SERVER.Error("invalid query parameter, param: %+v, err: %v", qp, err)
-		return nil, fmt.Errorf("invalid parameter")
+func (s *ProductService) Query(
+	counter dbTypes.Counter,
+	sortOrder dbTypes.SortOrder,
+	searcher dbTypes.Searcher,
+) ([]productTypes.Product, error) {
+	if err := s.CheckDB(); err != nil {
+		logger.SERVER.Error("database connection error, err: %v", err)
+		return nil, fmt.Errorf("database connection error")
 	}
 
+	products, err := s.query(counter, sortOrder, searcher)
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
+
+func (s *ProductService) query(
+	counter dbTypes.Counter,
+	sortOrder dbTypes.SortOrder,
+	searcher dbTypes.Searcher,
+) ([]productTypes.Product, error) {
 	var queryProducts []mysqlModel.Product
 
-	query := applyQueryFilters(s.DB.DB, qp)
-	query = applyOrderFilters(query, columnOrderMap)
+	query := dbTypes.Scopes(
+		s.DB.DB,
+		dbTypes.ConcatConditions(
+			counter.Conditions(),
+			sortOrder.Conditions(),
+			searcher.Conditions(),
+		)...,
+	)
 
 	if err := query.Find(&queryProducts).Error; err != nil {
 		logger.SERVER.Error("database error, err: %v", err)
@@ -309,63 +319,24 @@ func (s *ProductService) Query(qp productTypes.QueryParam, columnOrderMap map[st
 	var products []productTypes.Product
 
 	for _, p := range queryProducts {
-		products = append(products, productTypes.Product{
-			ID:           p.ID,
-			Name:         p.Name,
-			Title:        p.Title,
-			Description:  p.Description,
-			Category:     p.Category,
-			Brand:        p.Brand,
-			Manufacturer: p.Manufacturer,
-			Status:       p.Status,
-			Like:         uint(len(p.LikedBy)),
-			UpdatedAt:    p.UpdatedAt,
-			CreatedAt:    p.CreatedAt,
-		})
+		products = append(products, productModelToProduct(p))
 	}
 
 	return products, nil
 }
 
-func applyQueryFilters(db *gorm.DB, qp productTypes.QueryParam) *gorm.DB {
-	query := db.Offset(qp.Offset()).Limit(qp.Limit())
-
-	genSearchPattern := func(search string) string {
-		return fmt.Sprintf("%%%s%%", search)
+func productModelToProduct(p mysqlModel.Product) productTypes.Product {
+	return productTypes.Product{
+		ID:           p.ID,
+		Name:         p.Name,
+		Title:        p.Title,
+		Description:  p.Description,
+		Category:     p.Category,
+		Brand:        p.Brand,
+		Manufacturer: p.Manufacturer,
+		Status:       p.Status,
+		Like:         uint(len(p.LikedBy)),
+		UpdatedAt:    p.UpdatedAt,
+		CreatedAt:    p.CreatedAt,
 	}
-
-	if qp.Name != "" {
-		query = query.Where("name LIKE ?", genSearchPattern(qp.Name))
-	}
-	if qp.Title != "" {
-		query = query.Where("title LIKE ?", genSearchPattern(qp.Title))
-	}
-	if qp.Description != "" {
-		query = query.Where("description LIKE ?", genSearchPattern(qp.Description))
-	}
-	if qp.Brand != "" {
-		query = query.Where("brand LIKE ?", genSearchPattern(qp.Brand))
-	}
-	return query
-}
-
-func applyOrderFilters(db *gorm.DB, columnOrderMap map[string]string) *gorm.DB {
-	query := db
-	productColumnMap := mysqlModel.ProductColumnMap()
-
-	for column, order := range columnOrderMap {
-		_, ok := productColumnMap[column]
-		if !ok {
-			continue
-		}
-
-		switch order {
-		case string(interfaces.ASC):
-			query = query.Order(fmt.Sprintf("%s %s", column, order))
-		case string(interfaces.DESC):
-			query = query.Order(fmt.Sprintf("%s %s", column, order))
-		}
-	}
-
-	return query
 }

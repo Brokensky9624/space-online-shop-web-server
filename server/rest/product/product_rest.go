@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
+	"space.online.shop.web.server/rest/parse"
 	"space.online.shop.web.server/rest/response"
 	"space.online.shop.web.server/service"
+	"space.online.shop.web.server/service/db/model"
 	memberTypes "space.online.shop.web.server/service/member/types"
 	productTypes "space.online.shop.web.server/service/product/types"
 )
@@ -207,48 +208,17 @@ func (r *ProductREST) GetDetail(c *gin.Context) {
 }
 
 func (r *ProductREST) Query(c *gin.Context) {
-	pageStr := c.DefaultQuery("page", "1")
-	page, err := strconv.ParseInt(pageStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
-		return
-	}
-
-	pageSizeStr := c.DefaultQuery("page_size", "20")
-	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
-		return
-	}
-
-	search := c.DefaultQuery("search", "")
-
-	qp := productTypes.QueryParam{
-		Title:       search,
-		Name:        search,
-		Description: search,
-		Brand:       search,
-		Page:        int(page),
-		PageSize:    int(pageSize),
-	}
-
-	queryMap := c.Request.URL.Query()
-	columnOrderMap := make(map[string]string)
-	for k, v := range queryMap {
-		if strings.HasSuffix(k, "_sort_order") {
-			column := strings.TrimSuffix(k, "_sort_order")
-			if column == "" {
-				continue
-			}
-			if len(v) == 0 {
-				continue
-			}
-			columnOrderMap[column] = v[0]
-		}
-	}
+	queryParser := parse.NewQueryParser(
+		c.Request.URL.Query(),
+		model.ProductColumnMap(),
+	)
 
 	srv := r.srvMngr.ProductSrv
-	products, err := srv.Query(qp, columnOrderMap)
+	products, err := srv.Query(
+		queryParser.Counter(),
+		queryParser.SortOrder(),
+		queryParser.Searcher(),
+	)
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return

@@ -26,11 +26,23 @@ func AndCondition(field, value string) Condition {
 	}
 }
 
-func WithConditions(db *gorm.DB, conditions ...Condition) *gorm.DB {
+func ConcatConditions(multipleConditions ...[]Condition) []Condition {
+	conditions := make([]Condition, 0)
+
+	for _, singleConditions := range multipleConditions {
+		conditions = append(conditions, singleConditions...)
+	}
+
+	return conditions
+}
+
+func Scopes(db *gorm.DB, conditions ...Condition) *gorm.DB {
 	m := len(conditions)
 	cond := make([]func(query *gorm.DB) *gorm.DB, 0, m)
+
 	for _, condition := range conditions {
 		cond = append(cond, condition)
 	}
+
 	return db.Scopes(cond...)
 }
