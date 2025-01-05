@@ -4,11 +4,10 @@ import (
 	dbTypes "space.online.shop.web.server/service/db/types"
 )
 
-type IProductSrv interface {
+type IStockSrv interface {
 	Create(userID uint, params ...CreateParam) ([]uint, error)
 	Edit(userID uint, param EditParam) error
-	Like(userID uint, param LikeParam) error
 	Delete(userID uint, param ...DeleteParam) ([]uint, error)
-	Detail(param DetailParam) (*Product, error)
-	Query(conditions ...dbTypes.Condition) ([]Product, error)
+	Detail(param DetailParam) (*Stock, error)
+	Query(conditions ...dbTypes.Condition) ([]Stock, error)
 }

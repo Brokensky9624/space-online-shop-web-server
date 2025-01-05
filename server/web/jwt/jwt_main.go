@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"errors"
+	"net/http"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 const (
 	identityKey      = "id"                               // indetiyKey for JWT claim
 	identityUsername = "username"                         // identityUsername for JWT claim
+	identityAccount  = "account"                          // identityAccount for JWT claim
 	identityRole     = "role"                             // identityRole for JWT claim
 	secretKey        = "5BYrir4vrBMB2oFJVywHFSrvlim6kCRn" // secret key for JWT encrypt
 )
@@ -23,6 +25,7 @@ type IJWTAuth interface {
 	GetLoginHandler() gin.HandlerFunc
 	GetRefreshHandler() gin.HandlerFunc
 	GetMiddleware() gin.HandlerFunc
+	GetAuthHandler() gin.HandlerFunc
 }
 
 type defaultJWTAuth struct {
@@ -50,6 +53,7 @@ func (d *defaultJWTAuth) prepare() {
 				return jwt.MapClaims{
 					identityKey:      v.ID,
 					identityUsername: v.Username,
+					identityAccount:  v.Account,
 					identityRole:     v.Role,
 				}
 			}
@@ -60,9 +64,11 @@ func (d *defaultJWTAuth) prepare() {
 			id, _ := claims[identityKey].(float64)
 			role, _ := claims[identityRole].(float64)
 			username := claims[identityUsername].(string)
+			account := claims[identityAccount].(string)
 			return &memberTypes.Member{
 				ID:       uint(id),
 				Username: username,
+				Account:  account,
 				Role:     memberTypes.MemberRole(role),
 			}
 		},
@@ -89,9 +95,15 @@ func (d *defaultJWTAuth) prepare() {
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, response.FailRespObj(errors.New(message)))
 		},
-		TokenLookup:   "header: Authorization, query: token, cookie: jwt",
-		TokenHeadName: "Bearer",
-		TimeFunc:      time.Now,
+		TokenLookup:    "header: Authorization, query: token, cookie: jwt",
+		TokenHeadName:  "Bearer",
+		TimeFunc:       time.Now,
+		SendCookie:     true,
+		CookieName:     "jwt",
+		CookieMaxAge:   time.Hour * 24 * 7,
+		CookieDomain:   "localhost",
+		SecureCookie:   false,
+		CookieHTTPOnly: true,
 	})
 	if err != nil {
 		panic(err)
@@ -105,6 +117,25 @@ func (a defaultJWTAuth) GetLoginHandler() gin.HandlerFunc {
 
 func (a defaultJWTAuth) GetRefreshHandler() gin.HandlerFunc {
 	return gin.HandlerFunc(a.auth.RefreshHandler)
+}
+
+func (a defaultJWTAuth) GetAuthHandler() gin.HandlerFunc {
+	return gin.HandlerFunc(func(c *gin.Context) {
+		claims, err := a.auth.CheckIfTokenExpire(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			return
+		}
+
+		username, _ := claims[identityUsername].(string)
+		account, _ := claims[identityAccount].(string)
+
+		c.JSON(http.StatusOK, gin.H{
+			"account":         account,
+			"username":        username,
+			"isAuthenticated": true,
+		})
+	})
 }
 
 func (a defaultJWTAuth) GetMiddleware() gin.HandlerFunc {

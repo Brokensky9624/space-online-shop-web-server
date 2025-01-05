@@ -1,0 +1,130 @@
+[
+    {
+        "name": "light01",
+        "title": "圓形燈串-美好的邂逅",
+        "description": "長度三公尺，顏色為深褐色，燈泡設計為圓形。為環境添加秋天的點綴。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light02",
+        "title": "鏈子圓吊燈-乘載著光",
+        "description": "圓形以鍍金的鏈子垂吊在空間上方，暖色的光給予空間安定的力量。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light03",
+        "title": "白色吊燈-一起吃早午餐",
+        "description": "米白色的垂吊型燈飾，讓空間增添明亮感。適合與鄉村系列的搭配。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light04",
+        "title": "圓形燈串-秘密基地",
+        "description": "酒紅色的燈串，讓空間增添暖色系，適合煮一杯熱紅酒，拿起一本雜誌，躲進溫馨的秘密基地。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light05",
+        "title": "獨立圓形立燈-寧靜的力量",
+        "description": "燈座採用柱狀型設計，燈泡採正圓形。為環境添加一點暖色光。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light06",
+        "title": "白色立燈-永遠的焦點",
+        "description": "白色流線型設計的立燈。與直筒式的窄版燈罩，打出的光會無比聚焦。光匯集之處就是永遠的焦點。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light07",
+        "title": "三圓吊燈-移動的行星",
+        "description": "白色、深咖啡色、木頭原色組合燈照組。彷彿把移動的行星搬進家中。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light08",
+        "title": "灰白色垂燈-大都會指引",
+        "description": "對稱式直筒式的窄版燈罩，很適合裝在大廳或是客廳，彷彿大都會裡的指引。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light09",
+        "title": "半圓垂燈-新世紀燭光",
+        "description": "對稱式半圓燈罩，中間設計蠟燭形狀燈泡，優雅地將傳統與現代融合。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light10",
+        "title": "大型三角吊燈-總裁會客室",
+        "description": "採用高級金屬一體打造，並以三角型為主體的設計，垂掛式設計讓空間看起來更挑高。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light11",
+        "title": "三圓簍空垂燈-點亮時尚",
+        "description": "三顆圓燈藉方圓型的燈架垂吊，為空間加添奢華設計感。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light12",
+        "title": "水晶吊燈-公主的起居室",
+        "description": "由兩百四十個小燈泡組成，垂吊在空間上方顯得格外高雅，主人的品味令賓客讚嘆不絕。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light13",
+        "title": "織布檯燈-漸層暖心光",
+        "description": "粉紅色的織布，透出暖色的光。木頭製的燈座，微挑高設計跳脫不凡。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light14",
+        "title": "大型圓形吊燈-水母飄飄然",
+        "description": "採用高級金屬一體打造，並以水母造型為主的設計，給空間營造一種輕鬆奢華感。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light15",
+        "title": "中式燈籠-提燈找妳",
+        "description": "深紅色點點的布，搭配燈籠造型設計，為空間增添中國風格。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    },
+    {
+        "name": "light16",
+        "title": "三金屬吊燈-未來時空",
+        "description": "採用高級金屬一體打造，三個造型相似卻不同，垂掛式以低調奢華方式點亮空間。",
+        "category": "light",
+        "Brand": "Jacy33",
+        "Manufacturer": "三三家具"
+    }
+]

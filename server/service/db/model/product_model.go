@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	once             sync.Once
+	productOnce      sync.Once
 	productColumnMap map[string]struct{}
 )
 
 func FetchProductColumnMap() {
-	once.Do(func() {
+	productOnce.Do(func() {
 		productColumnMap = make(map[string]struct{})
 		db := db.Service()
 		stmt := gorm.Statement{DB: db.DB}
@@ -46,13 +46,9 @@ type Product struct {
 	Manufacturer string   `gorm:"size:200;not null"`
 	Status       uint     `gorm:"size:128;not null"`
 	LikedBy      []Member `gorm:"many2many:member_product_likes;" json:"-"`
+	Stock        []Stock  `gorm:"foreignKey:ProductID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
 }
 
 func (Product) TableName() string {
 	return "product"
-}
-
-func (p *Product) SetID(productID uint) *Product {
-	p.ID = productID
-	return p
 }

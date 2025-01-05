@@ -20,7 +20,7 @@ const (
 
 var ( // FIXME: load config
 	SupportedCategories = []string{
-		"lamp",
+		"light",
 		"chair",
 	}
 )

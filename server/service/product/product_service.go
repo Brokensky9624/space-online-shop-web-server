@@ -238,7 +238,7 @@ func (s *ProductService) deleteOne(userID uint, param productTypes.DeleteParam) 
 		return 0, err
 	}
 
-	logger.SERVER.Info("succeed in deleting product, user_id: %v, product_id: %v\n", userID, param.ProductID)
+	logger.SERVER.Info("succeed in deleting one product, user_id: %v, product_id: %v\n", userID, param.ProductID)
 	return param.ProductID, nil
 }
 
@@ -278,16 +278,14 @@ func (s *ProductService) detail(param productTypes.DetailParam) (*productTypes.P
 }
 
 func (s *ProductService) Query(
-	counter dbTypes.Counter,
-	sortOrder dbTypes.SortOrder,
-	searcher dbTypes.Searcher,
+	conditions ...dbTypes.Condition,
 ) ([]productTypes.Product, error) {
 	if err := s.CheckDB(); err != nil {
 		logger.SERVER.Error("database connection error, err: %v", err)
 		return nil, fmt.Errorf("database connection error")
 	}
 
-	products, err := s.query(counter, sortOrder, searcher)
+	products, err := s.query(conditions...)
 	if err != nil {
 		return nil, err
 	}
@@ -296,19 +294,13 @@ func (s *ProductService) Query(
 }
 
 func (s *ProductService) query(
-	counter dbTypes.Counter,
-	sortOrder dbTypes.SortOrder,
-	searcher dbTypes.Searcher,
+	conditions ...dbTypes.Condition,
 ) ([]productTypes.Product, error) {
 	var queryProducts []mysqlModel.Product
 
 	query := dbTypes.Scopes(
 		s.DB.DB,
-		dbTypes.ConcatConditions(
-			counter.Conditions(),
-			sortOrder.Conditions(),
-			searcher.Conditions(),
-		)...,
+		conditions...,
 	)
 
 	if err := query.Find(&queryProducts).Error; err != nil {

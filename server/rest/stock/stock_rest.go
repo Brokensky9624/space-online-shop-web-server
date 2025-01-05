@@ -1,4 +1,4 @@
-package product
+package stock
 
 import (
 	"errors"
@@ -10,72 +10,69 @@ import (
 	"space.online.shop.web.server/rest/parse"
 	"space.online.shop.web.server/rest/response"
 	"space.online.shop.web.server/service"
+
 	"space.online.shop.web.server/service/db/model"
 	dbTypes "space.online.shop.web.server/service/db/types"
 	memberTypes "space.online.shop.web.server/service/member/types"
-	productTypes "space.online.shop.web.server/service/product/types"
+	stockTypes "space.online.shop.web.server/service/stock/types"
 )
 
-type ProductREST struct {
+type StockREST struct {
 	srvMngr        *service.ServiceManager
 	apiRouterGroup *gin.RouterGroup
 }
 
-func NewREST(mngr *service.ServiceManager, routerGroup *gin.RouterGroup) *ProductREST {
-	return &ProductREST{
+func NewREST(mngr *service.ServiceManager, routerGroup *gin.RouterGroup) *StockREST {
+	return &StockREST{
 		srvMngr:        mngr,
 		apiRouterGroup: routerGroup,
 	}
 }
 
-func (r *ProductREST) RegisterRoute() *ProductREST {
-	productGroup := r.apiRouterGroup.Group("/product")
+func (r *StockREST) RegisterRoute() *StockREST {
+	stockGroup := r.apiRouterGroup.Group("/stock")
 	{
-		// single
-		productGroup.POST("/create", r.Create)
-		productGroup.PUT("/:id/edit", r.Edit)
-		productGroup.PUT("/:id/like", r.Like)
-		productGroup.GET("/:id", r.GetDetail)
-		productGroup.DELETE("/delete", r.Delete)
+		stockGroup.POST("/create", r.Create)
+		stockGroup.PUT("/:id/edit", r.Edit)
+		stockGroup.GET("/:id", r.Detail)
+		stockGroup.DELETE("/delete", r.Delete)
 	}
-	productsGroup := r.apiRouterGroup.Group("/products")
+	stocksGroup := r.apiRouterGroup.Group("/stocks")
 	{
-		// batches
-		productsGroup.GET("/query", r.Query)
+		stocksGroup.GET("/query", r.Query)
 	}
 	return r
 }
 
-func (r *ProductREST) Create(c *gin.Context) {
-	var params []productTypes.CreateParam
+func (r *StockREST) Create(c *gin.Context) {
+	var params []stockTypes.CreateParam
+
 	if err := c.ShouldBindJSON(&params); err != nil {
 		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
 		return
 	}
 
-	// get user
 	user, exists := c.Get("id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, response.FailRespObj(errors.New("Unauthorized")))
 		return
 	}
-
 	member, ok := user.(*memberTypes.Member)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, response.FailRespObj(errors.New("internal Server Error")))
 		return
 	}
 
-	srv := r.srvMngr.ProductSrv
+	srv := r.srvMngr.StockSrv
 	idList, err := srv.Create(member.ID, params...)
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	c.JSON(http.StatusOK, response.SuccessRespObj(fmt.Sprintf("succeed in creating products, id list: %#v", idList), nil))
+	c.JSON(http.StatusOK, response.SuccessRespObj(fmt.Sprintf("succeed in creating stocks, id list: %#v", idList), nil))
 }
 
-func (r *ProductREST) Edit(c *gin.Context) {
+func (r *StockREST) Edit(c *gin.Context) {
 	idStr := c.Param("id")
 	idUINT64, err := strconv.ParseUint(idStr, 10, 64)
 	id := uint(idUINT64)
@@ -84,7 +81,7 @@ func (r *ProductREST) Edit(c *gin.Context) {
 		return
 	}
 
-	var param productTypes.EditParam
+	var param stockTypes.EditParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
 		return
@@ -96,60 +93,24 @@ func (r *ProductREST) Edit(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, response.FailRespObj(errors.New("Unauthorized")))
 		return
 	}
-
 	member, ok := user.(*memberTypes.Member)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, response.FailRespObj(errors.New("internal Server Error")))
 		return
 	}
 
-	srv := r.srvMngr.ProductSrv
+	srv := r.srvMngr.StockSrv
 	if err := srv.Edit(member.ID, param); err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
 
-	msg := fmt.Sprintf("edit product %d successfully!", id)
+	msg := fmt.Sprintf("edit stock %d successfully!", id)
 	c.JSON(http.StatusOK, response.SuccessRespObj(msg, nil))
 }
 
-func (r *ProductREST) Like(c *gin.Context) {
-	idStr := c.Param("id")
-	idUINT64, err := strconv.ParseUint(idStr, 10, 64)
-	id := uint(idUINT64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
-		return
-	}
-	var param productTypes.LikeParam
-	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
-		return
-	}
-	param.ProductID = id
-
-	// get user
-	user, exists := c.Get("id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, response.FailRespObj(errors.New("Unauthorized")))
-		return
-	}
-	member, ok := user.(*memberTypes.Member)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, response.FailRespObj(errors.New("internal Server Error")))
-		return
-	}
-	srv := r.srvMngr.ProductSrv
-	if err := srv.Like(member.ID, param); err != nil {
-		c.JSON(http.StatusOK, response.FailRespObj(err))
-		return
-	}
-	msg := fmt.Sprintf("like product %d successfully!", id)
-	c.JSON(http.StatusOK, response.SuccessRespObj(msg, nil))
-}
-
-func (r *ProductREST) Delete(c *gin.Context) {
-	var params []productTypes.DeleteParam
+func (r *StockREST) Delete(c *gin.Context) {
+	var params []stockTypes.DeleteParam
 	if err := c.ShouldBindJSON(&params); err != nil {
 		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
 		return
@@ -167,16 +128,16 @@ func (r *ProductREST) Delete(c *gin.Context) {
 		return
 	}
 
-	srv := r.srvMngr.ProductSrv
+	srv := r.srvMngr.StockSrv
 	idList, err := srv.Delete(member.ID, params...)
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	c.JSON(http.StatusOK, response.SuccessRespObj("succeed in deleting products", idList))
+	c.JSON(http.StatusOK, response.SuccessRespObj("succeed in deleting stocks", idList))
 }
 
-func (r *ProductREST) GetDetail(c *gin.Context) {
+func (r *StockREST) Detail(c *gin.Context) {
 	idStr := c.Param("id")
 	idUINT64, err := strconv.ParseUint(idStr, 10, 64)
 	id := uint(idUINT64)
@@ -184,27 +145,27 @@ func (r *ProductREST) GetDetail(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, response.FailRespObj(err))
 		return
 	}
-	param := productTypes.DetailParam{
-		ProductID: id,
+	param := stockTypes.DetailParam{
+		StockID: id,
 	}
-	srv := r.srvMngr.ProductSrv
-	product, err := srv.Detail(param)
+	srv := r.srvMngr.StockSrv
+	stock, err := srv.Detail(param)
 	if err != nil {
 		c.JSON(http.StatusOK, response.FailRespObj(err))
 		return
 	}
-	msg := fmt.Sprintf("get product %d detail successfully!", id)
-	c.JSON(http.StatusOK, response.SuccessRespObj(msg, product))
+	msg := fmt.Sprintf("get stock %d detail successfully!", id)
+	c.JSON(http.StatusOK, response.SuccessRespObj(msg, stock))
 }
 
-func (r *ProductREST) Query(c *gin.Context) {
+func (r *StockREST) Query(c *gin.Context) {
 	queryParser := parse.NewQueryParser(
 		c.Request.URL.Query(),
-		model.ProductColumnMap(),
+		model.StockColumnMap(),
 	)
 
-	srv := r.srvMngr.ProductSrv
-	products, err := srv.Query(
+	srv := r.srvMngr.StockSrv
+	stocks, err := srv.Query(
 		dbTypes.ConcatConditions(
 			queryParser.Counter().Conditions(),
 			queryParser.SortOrder().Conditions(),
@@ -216,6 +177,6 @@ func (r *ProductREST) Query(c *gin.Context) {
 		return
 	}
 
-	msg := "query products successfully!"
-	c.JSON(http.StatusOK, response.SuccessRespObj(msg, products))
+	msg := "query stocks successfully!"
+	c.JSON(http.StatusOK, response.SuccessRespObj(msg, stocks))
 }

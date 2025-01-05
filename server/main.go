@@ -14,6 +14,7 @@ import (
 	"space.online.shop.web.server/service/db/model"
 	"space.online.shop.web.server/service/member"
 	"space.online.shop.web.server/service/product"
+	"space.online.shop.web.server/service/stock"
 	"space.online.shop.web.server/shared/utils/logger"
 	"space.online.shop.web.server/web"
 )
@@ -46,6 +47,7 @@ func main() {
 		&model.Member{},
 		&model.Product{},
 		&model.MemberProductLikes{},
+		&model.Stock{},
 	))
 	stoppers = append(stoppers, dbSrv)
 
@@ -54,9 +56,11 @@ func main() {
 	// setup services to service manager
 	memberSrv := member.NewService(dbSrv)
 	productSrv := product.NewService(dbSrv)
+	stockSrv := stock.NewStockService(dbSrv)
 	srvManager := service.NewManager().
 		SetMemberService(memberSrv).
-		SetProductService(productSrv)
+		SetProductService(productSrv).
+		SetStockService(stockSrv)
 
 	// setup web server and router
 	web.New(srvManager).Initialize()
